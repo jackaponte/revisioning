@@ -15,7 +15,7 @@ class revisioning_handler_filter_node_state extends views_handler_filter_in_oper
       return;
     }
     $node_table = $this->ensure_my_table();
-    $revisions_table = '{'. $this->query->ensure_table('node_revisions') .'}';
+    $revisions_table = '{' . $this->query->ensure_table('node_revision') . '}';
     $subclauses = array();
     foreach ($this->value as $state_code) {
       switch ($state_code) {
@@ -42,11 +42,11 @@ class revisioning_handler_filter_node_state extends views_handler_filter_in_oper
       }
     }
     if (!empty($subclauses)) {
-      $where_clause = implode(' OR ', $subclauses);
+      $where_expression = implode(' OR ', $subclauses);
       if ($this->operator == 'not in') {
-        $where_clause = "!($where_clause)";
+        $where_expression = "!($where_expression)";
       }
-      $this->query->add_where($this->options['group'], $where_clause);
+      $this->query->add_where_expression($this->options['group'], $where_expression);
     }
   }
 

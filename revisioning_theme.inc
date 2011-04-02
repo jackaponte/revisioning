@@ -6,24 +6,24 @@
  */
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
+ *
  * Register the theme_hooks() available in this module, with their arguments
  * and default values.
  */
 function revisioning_theme() {
-  return array(
-    'revisioning_revisions_summary' => array(
-      'arguments' => array('form' => array()),
-    ),
-    'revisions_pending_block' => array(
-      'arguments' => array('content' => NULL),
-      'template' => 'revisions-pending-block', // revisions-pending-block.tpl.php
-    ),
-    'revisions_summary' => array(
-      'arguments' => array('submenu_links' => NULL, 'content' => NULL),
-      'template' => 'revisions-summary', // revisions-summary.tpl.php
-    ),
+  $theme = array();
+  $theme['revisioning_revisions_summary'] = array(
+    'render element' => 'form', // index in the $variables[] array when
+    // function theme_revisioning_revisions_summary($variables) gets called
   );
+  $theme['revisions_pending_block'] = array(
+    'template' => 'revisions-pending-block', // revisions-pending-block.tpl.php
+  );
+  $theme['revisions_summary'] = array(
+    'template' => 'revisions-summary', // revisions-summary.tpl.php
+  );
+  return $theme;
 }
 
 /**
@@ -31,20 +31,20 @@ function revisioning_theme() {
  * object returned includes a column of checkboxes allowing the user to select
  * two revisions for side-by-side comparison.
  *
+ * @param $form, typically an empty array as passed in by drupal_get_form()
  * @param $form_state
- * @param $nid, the id of the node
- * @return form containing all data to be themed
+ * @param $extra parametrs, as passed into drupal_get_form(), see _theme_revisions_summary()
+ * @return updated form containing all data to be themed
  */
-function revisioning_revisions_summary($form_state, $nid) {
-  $form = array();
+function revisioning_revisions_summary($form, &$form_state, $extra) {
 
   // #type=>'value' form field values will not appear in the HTML. Used to pass
-  // the node id to revisioning_revisions_summary_submit() and
-  // theme_revisioning_revisions_summary().
+  // the node id to theme_revisioning_revisions_summary().
+  $nid = $extra; // or: $form_state['build_info']['args'][0];
   $form['nid'] = array('#type' => 'value', '#value' => $nid);
 
   $show_taxonomy_terms = module_exists('taxonomy') &&
-    (count(taxonomy_get_vocabularies()) > 0) && variable_get("show_taxonomy_terms", TRUE);
+    variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 
   $revisions = _revisioning_get_all_revisions_for_node($nid, $show_taxonomy_terms);
 
@@ -57,21 +57,28 @@ function revisioning_revisions_summary($form_state, $nid) {
       $published = $revision->status;
     }
     $vid = $revision->vid;
-    $revision_ids[$vid] = ''; // no text next to check box
+    $revision_ids[$vid] = ''; // no text next to check boxes (see below)
     $base_url = "node/$nid/revisions/$vid";
 
     // First column: saved date + author
     $first_cell = t('Saved !date by !username',
       array('!date' => l(format_date($revision->timestamp, 'small'), "$base_url/view"),
-            '!username' => theme('username', $revision)))
-      . (empty($revision->log) ? '' : '<p class="revision-log">'. filter_xss($revision->log) .'</p>');
-    $form['info'][$vid] = array('#value' => $first_cell);
+            '!username' => theme('username', array('account' => $revision))))
+      . (empty($revision->log) ? '' : '<p class="revision-log">' . filter_xss($revision->log) . '</p>');
+    $form['info'][$vid] = array(
+      '#type' => 'item',
+      '#markup' => $first_cell
+    );
 
     // Third column: term (2nd column is handled below)
     if ($show_taxonomy_terms) {
-      $form['term'][$vid] = array('#value' => $revision->term);
+      $form['term'][$vid] = array(
+        '#type' => 'item',
+        '#markup' => isset($revision->term) ? $revision->term : ''
+      );
     }
-  }
+  } // foreach
+
   drupal_set_message(format_plural(count($revisions),
     '@publication_status @content_type %title has only one revision',
     '@publication_status @content_type %title has @count revisions.',
@@ -83,6 +90,7 @@ function revisioning_revisions_summary($form_state, $nid) {
   ));
   if (count($revisions) >= 2 && module_exists('diff')) {
     // Second column: check-boxes to select two revisions to compare
+    // The default selection is the top two check-boxes
     $id1 = key($revision_ids);
     next($revision_ids);
     $id2 = key($revision_ids);
@@ -127,20 +135,15 @@ function revisioning_revisions_summary_submit($form, &$form_state) {
   next($selected_vids);
   $vid2 = key($selected_vids);
   drupal_get_messages(); // clear existing msgs
-  drupal_set_message(
-    t('Comparing revision #!revision2 against revision #!revision1',
+  drupal_set_message(t('Comparing revision #!revision2 against revision #!revision1',
     array('!revision2' => $vid2, '!revision1' => $vid1)));
-  $destination = '';
-  if (isset($_REQUEST['destination'])) {
-    $destination = drupal_get_destination();
-    unset($_REQUEST['destination']);
-  }
   $nid = $form_state['values']['nid'];
-  $form_state['redirect'] = array("node/$nid/revisions/view/$vid2/$vid1", $destination);
+  $form_state['redirect'] = "node/$nid/revisions/view/$vid2/$vid1";
 }
 
 /**
- * Theme the supplied form.
+ * Theme the supplied form as a table, then prepend submenu links via
+ * revisions-summary.tpl.php
  *
  * Uses the following subthemes:
  * o 'table_revisions', falling back to theme.inc/theme_table() if not defined
@@ -153,13 +156,18 @@ function revisioning_revisions_summary_submit($form, &$form_state) {
  * @param $form
  * @return unknown_type
  */
-function theme_revisioning_revisions_summary($form) {
+function theme_revisioning_revisions_summary($variables) {
+
+  $form = $variables['form'];
+  if (!isset($form['nid'])) {
+    drupal_set_message(t('theme_revisioning_revisions_summary(): form does not contain nid - aborting.'), 'error');
+    return;
+  }
 
   // Need node info, fortunately node_load() employs a cache so is efficient
   $node = node_load($form['nid']['#value']);
 
-  $css_path = drupal_get_path('module', 'revisioning') .'/revisioning.css';
-  drupal_add_css($css_path, 'module', 'all', FALSE);
+  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css');
 
   // Set up the table rows
   $rows = array();
@@ -167,7 +175,7 @@ function theme_revisioning_revisions_summary($form) {
 
   $show_diff = count($revision_ids) >= 2 && module_exists('diff');
   $show_taxonomy_terms = module_exists('taxonomy') &&
-    (count(taxonomy_get_vocabularies()) > 0) && variable_get("show_taxonomy_terms", TRUE);
+    variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 
   // Set up the table header
   $header = array(t('Revision'));
@@ -175,43 +183,60 @@ function theme_revisioning_revisions_summary($form) {
     $header[] = array('data' => drupal_render($form['submit']), 'class' => 'form-submit');
   }
   if ($show_taxonomy_terms) {
-    $header[] = t('Term');
+    $header[] = t('Terms & Tags');
   }
   $header[] = t('Status');
 
   $is_initial_unpublished_draft = !$node->status && (count($revision_ids) == 1);
+
+  // From the $form columns create table $rows
   foreach ($revision_ids as $vid) {
     $row = array();
-    // Revision info
+    // column #1: Revision info
     $row[] = drupal_render($form['info'][$vid]);
-    // Compare checkbox
+    // column #2: Compare checkbox
     if ($show_diff) {
       $row[] = array('data' => drupal_render($form['tickbox'][$vid]));
     }
-    // Term
+    // column #3: Term
     if ($show_taxonomy_terms) {
       $row[] = drupal_render($form['term'][$vid]);
     }
-    // Publication status
+    // column #4: Publication status
     $is_current = ($vid == $node->vid);
     $is_pending = ($vid > $node->vid) || $is_initial_unpublished_draft;
     if ($is_pending) {
       $row[] = array('data' => t('in draft/pending publication'));
     }
     else {
-      $row[] = array('data' => $is_current && $node->status ? theme('placeholder', t('current revision (published)')) : t('archived'));
+      $row[] = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
-    // Apply css
-    $row_style = $is_current ? 'revision-current' : ($is_pending ? 'revision-pending' : NULL);
+    // Apply CSS class
+    $row_style = $is_current ? array('revision-current') : ($is_pending ? array('revision-pending') : array());
     if ($is_current && $node->status) {
-      $row_style .= ' published';
+      $row_style[] = 'published';
     }
     $rows[] = array('data' => $row, 'class' => $row_style);
   }
-  $attributes = array('class' => 'table-revisions');
-  $content = theme(array('table_revisions', 'table'), $header, $rows, $attributes, $caption = NULL);
+  // Render $header and $rows as a table
+  $table_variables = array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('class' => array('table-revisions'))
+  );
+  $content = theme(array('table_revisions', 'table'), $table_variables);
+
+  // Prepend submenu links
   $submenu_links = _revisioning_generate_node_links_according_to_permissions($node);
-  return theme(array('revisions_summary'), $submenu_links, $content) . drupal_render($form);
+
+  // Combine submenu links and rendered table using a template (.tpl.php) file
+  $template_variables = array(
+    'submenu_links' => $submenu_links,
+    'content' => $content
+  );
+  $output = theme(array('revisions_summary'), $template_variables);
+
+  return $output . drupal_render_children($form);
 }
 
 /**
@@ -237,16 +262,16 @@ function theme_table_revisions($header, $rows) {
  * @param $node
  *   Node whose revisions to display
  * @return
- *   Themed table HTML
+ *   Render array
  *
  * @ingroup themeable
  */
-function _theme_revisions_summary(&$node) {
-  drupal_set_title(t('Revisions for %title', array('%title' => $node->title)));
+function _theme_revisions_summary($node) {
+  drupal_set_title(t('Revisions for %title', array('%title' => $node->title)), PASS_THROUGH);
   return drupal_get_form('revisioning_revisions_summary', $node->nid);
 }
 
-function _theme_revisions_pending_block($nodes) {
+function _theme_block_pending_revisions($nodes) {
   $max_num_shown = variable_get('revisioning_block_num_pending', 5);
   $nodes_to_display = array_slice($nodes, 0, $max_num_shown);
   $links = array();
@@ -254,22 +279,24 @@ function _theme_revisions_pending_block($nodes) {
     $vid = revisioning_get_latest_revision_id($node->nid);
     $links[] = l($node->title, "node/$node->nid/revisions/$vid/view");
   }
-  $css_path = drupal_get_path('module', 'revisioning') .'/revisioning.css';
-  drupal_add_css($css_path, 'module', 'all', FALSE); // also loads /revisioning-rtl.css
+  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css'); // also loads /revisioning-rtl.css
   $block = array();
   $title_link = trim(variable_get('revisioning_content_summary_page', ''));
   if (empty($title_link)) {
     if (module_exists('module_grants_monitor') && user_tools_user_any_access(module_grants_monitor_perm())) {
       $title_link = 'accessible-content';
     }
+    elseif (module_exists('views')) {
+      $title_link = 'content-summary';
+    }
     else {
-      $title_link = 'admin/content/node';
+      $title_link = 'admin/content';
     }
   }
   $block['subject'] = l(t('!num_revisions pending',
     array('!num_revisions' => format_plural(count($nodes), '1 revision', '@count revisions'))),
     $title_link);
-  $block['content'] = theme('item_list', $links);
+  $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
   return $block;
 }
 
@@ -286,32 +313,19 @@ function _theme_revisions_pending_block($nodes) {
  */
 function _revisioning_generate_node_links_according_to_permissions($node, $link_type = 0) {
   $nid = $node->nid;
-  $links = array();
-  if (_revisioning_node_revision_access('publish revisions', $node)) {
-    $link['title'] = t('Publish');
-    $link['href'] = "node/$nid/revisions/$node->vid/publish";
-  //$link['localized_options']['query'] = drupal_get_destination();
-    $links[] = $link;
+  $themed_links = array();
+  if (_revisioning_access_node_revision('publish revisions', $node)) {
+    $themed_links[] = l(t('Publish'), "node/$nid/revisions/$node->vid/publish");
   }
-  elseif (_revisioning_node_revision_access('unpublish current revision', $node)) {
-    $link['title'] = t('Unpublish current revision');
-    $link['href'] = "node/$nid/unpublish";
-  //$link['localized_options']['query'] = drupal_get_destination();
-    $links[] = $link;
+  elseif (_revisioning_access_node_revision('unpublish current revision', $node)) {
+    $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish");
   }
-  if (_revisioning_node_revision_access('delete node', $node)) {
-    $link['title'] = // avoiding format_plural [#557050]
+  if (_revisioning_access_node_revision('delete node', $node)) {
+    $text = // avoiding format_plural [#557050]
       ($node->num_revisions == 1)
       ? t('Delete')
       : ($node->num_revisions == 2 ? t('Delete both revisions') : t('Delete all @count revisions', array('@count' => $node->num_revisions)));
-    $link['href'] = "node/$nid/delete";
-  //$link['localized_options']['query'] = '';
-    $links[] = $link;
-  }
-  $themed_links = array();
-  foreach ($links as $link) {
-    $link['type'] = $link_type;
-    $themed_links[] = theme('menu_item_link', $link);
+    $themed_links[] = l($text, "node/$nid/delete");
   }
   return $themed_links;
 }

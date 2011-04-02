@@ -37,7 +37,7 @@ class revisioning_handler_field_revision_state extends views_handler_field {
     $vid = $values->{$this->aliases['vid']};
     $published = $values->{$this->aliases['published']};
     $current_vid = $values->{$this->aliases['current_vid']};
-    $is_initial_unpublished_draft = !$published && (node_tools_get_number_of_revisions($nid) == 1);
+    $is_initial_unpublished_draft = !$published && (revisioning_get_number_of_revisions($nid) == 1);
     $is_pending = ($vid > $current_vid) || $is_initial_unpublished_draft;
     $state_code = $is_pending ? REVISION_PENDING : ($vid == $current_vid ? REVISION_CURRENT : REVISION_ARCHIVED);
     $description = revisioning_revision_states($state_code);

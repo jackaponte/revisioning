@@ -13,7 +13,7 @@ function revisioning_admin_configure() {
     '#type' => 'fieldset',
     '#title' => t('Configure which revision is loaded when clicking on a view or edit link'),
     '#description' => t('This section allows you to configure which revision is loaded when clicking on links for viewing or editing moderated content, that is content for which the check-box <strong>New revision in draft, pending moderation</strong> is ticked on the %link page. If not ticked for this content type, current and latest revisions will be one and the same, so that the options behave identically.',
-      array('%link' => 'admin/content/node-type/<type>'))
+      array('%link' => 'admin/structure/types/manage/<content-type>'))
   );
   $form['revisioning_view_and_edit_links']['revisioning_view_callback'] = array(
     '#type' => 'radios',
@@ -33,14 +33,29 @@ function revisioning_admin_configure() {
     '#default_value' => variable_get('revisioning_edit_callback', REVISIONING_LOAD_CURRENT),
     '#description' => t('The first option represents default core behaviour.')
   );
-  if (module_exists('workflow')) {
-    $form['revisioning_allow_workflow_transition_via_edit_form'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Allow workflow state transistion via content edit form'),
-      '#default_value' => variable_get('revisioning_allow_workflow_transition_via_edit_form', TRUE),
-      '#description' => t('If unticked, state transitions are only possible via the Workflow tab. Make sure you have enabled the Workflow tab permissions <a href="!link">here</a>',
-        array('!link' => '/admin/build/workflow/edit'))
+  if (module_exists('taxonomy') || module_exists('workflow')) {
+    $form['revisioning_display_options'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Display options'),
+      '#description' => t('')
     );
+    if (module_exists('taxonomy')) {
+      $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Where applicable add a <strong>Terms & Tags</strong> column to the content revisions summary (Revisions tab).'),
+        '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
+        '#description' => t('This column will only be shown if taxonomy vocabularies have been defined.')
+      );
+    }
+    if (module_exists('workflow')) {
+      $form['revisioning_display_options']['revisioning_allow_workflow_transition_via_edit_form'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Allow workflow state transistion via content edit form'),
+        '#default_value' => variable_get('revisioning_allow_workflow_transition_via_edit_form', TRUE),
+        '#description' => t('If unticked, state transitions are only possible via the Workflow tab. Make sure you have enabled the Workflow tab permissions <a href="!link">here</a>',
+          array('!link' => '/admin/build/workflow/edit'))
+      );
+    }
   }
   return system_settings_form($form);
 }

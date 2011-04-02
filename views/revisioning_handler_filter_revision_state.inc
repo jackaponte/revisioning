@@ -28,16 +28,16 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
           $subclauses[] = "($revisions_table.vid=$node_table.vid AND $node_table.status=1)";
           break;
         case REVISION_PENDING:
-          $subclauses[] = "($revisions_table.vid>$node_table.vid OR ($node_table.status=0 AND (SELECT COUNT(vid) FROM {". $revisions_table ."} WHERE nid=$node_table.nid)=1))";
+          $subclauses[] = "($revisions_table.vid>$node_table.vid OR ($node_table.status=0 AND (SELECT COUNT(vid) FROM {" . $revisions_table . "} WHERE nid=$node_table.nid)=1))";
           break;
       }
     }
     if (!empty($subclauses)) {
-      $where_clause = implode(' OR ', $subclauses);
+      $where_expression = implode(' OR ', $subclauses);
       if ($this->operator == 'not in') {
-        $where_clause = '!'. $where_clause;
+        $where_expression = '!' . $where_expression;
       }
-      $this->query->add_where($this->options['group'], $where_clause);
+      $this->query->add_where_expression($this->options['group'], $where_expression);
     }
   }
 

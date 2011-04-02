@@ -2,9 +2,9 @@
 .submenu.revisions {
 }
 
-.table-revisions .form-item, .table-revisions th.form-submit {
+.table-revisions th.form-submit,
+.table-revisions td .form-type-checkbox {
   text-align: center;
-  padding: 0;
 }
 
 .revision-pending td {

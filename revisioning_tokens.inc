@@ -19,7 +19,7 @@
  */
 
 /**
- * Implementation of hook_token_list().
+ * Implements hook_token_list().
  */
 function revisioning_token_list($type = 'all') {
   if ($type == 'node' || $type == 'all') {
@@ -36,7 +36,7 @@ function revisioning_token_list($type = 'all') {
 }
 
 /**
- * Implementation of hook_token_values().
+ * Implements hook_token_values().
  */
 function revisioning_token_values($type, $object = NULL, $options = array()) {
   $values = array();
@@ -53,7 +53,7 @@ function revisioning_token_values($type, $object = NULL, $options = array()) {
         case 'revert':
         case 'unpublish':
           $nid = arg(1);
-          $revision = node_load($nid, node_tools_get_current_node_revision_id($nid));
+          $revision = node_load($nid, revisioning_get_current_node_revision_id($nid));
           $values['vid'] = $revision->vid;
           $values['revision-title'] = $revision->title;
           _set_revision_author_values($revision->revision_uid, $values);
@@ -64,7 +64,8 @@ function revisioning_token_values($type, $object = NULL, $options = array()) {
 }
 
 function _set_revision_author_values($uid, &$values) {
-  $account = db_fetch_object(db_query('SELECT name, mail FROM {users} WHERE uid=%d', $uid));
+  $result = db_query("SELECT name, mail FROM {users} WHERE uid = :uid", array(':uid' => $uid));
+  $account = $result[0];
   $values['revision-author-uid'] = $uid;
   $values['revision-author-name'] = check_plain($account->name);
   $values['revision-author-name-raw'] = $account->name;

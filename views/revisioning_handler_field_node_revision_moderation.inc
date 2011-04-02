@@ -24,7 +24,7 @@ class revisioning_handler_field_node_revision_moderation extends views_handler_f
 
   function render($values) {
     $content_type = $values->{$this->aliases['type']};
-    $moderated = node_tools_content_is_moderated($content_type);
+    $moderated = revisioning_content_is_moderated($content_type);
     return $moderated ? t('Yes') : ''; // not returning 'No' to allow special tricks with empty field
   }
 }

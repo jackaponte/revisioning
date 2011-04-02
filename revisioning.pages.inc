@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  *
  * Note: for cases where the FORM_ID is known a priori use
  * revisioning_form_FORM_ID_form_alter(), e.g. revisioning_form_node_type_form_alter()
@@ -14,6 +14,7 @@
 function revisioning_form_alter(&$form, &$form_state, $form_id) {
   // Alter the Create/Edit form
   if (isset($form['#id']) && $form['#id'] == 'node-form') {
+
     $content_type = $form['type']['#value'];
     // Note that $form_id == $content_type_$form['#id']
     $form['options']['#collapsed'] = FALSE;
@@ -22,15 +23,22 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       $form['revision_information']['revision_moderation'] = array(
         '#title' => t('New revision in draft, pending moderation'),
         '#type' => 'checkbox',
-        '#default_value' => node_tools_content_is_moderated($content_type)
+        '#default_value' => revisioning_content_is_moderated($content_type)
       );
     }
     else {
       // Don't show tickbox, just set default on form
       $form['revision_moderation'] = array(
         '#type' => 'value',
-        '#value' => node_tools_content_is_moderated($content_type)
+        '#value' => revisioning_content_is_moderated($content_type)
       );
+    }
+
+    $nid = $form['#node']->nid;
+    if (isset($form['buttons']['delete']) && revisioning_get_number_of_revisions($nid) > 1) {
+      // Special treatment for Delete button when there's multiple revisions.
+      // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
+      $form['buttons']['delete']['#value'] = t('Delete all revisions');
     }
 
     if (!variable_get('revisioning_allow_workflow_transition_via_edit_form', TRUE)) {
@@ -45,7 +53,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     // node.
     $nid = $form['#node']->nid;
     $vid = $form['#node']->vid;
-    if (isset($form['buttons']['delete']) && user_access('delete revisions') && $vid != node_tools_get_current_node_revision_id($nid)) {
+    if (isset($form['buttons']['delete']) && user_access('delete revisions') && $vid != revisioning_get_current_node_revision_id($nid)) {
       $form['buttons']['delete']['#value'] = 'Delete this revision';
       $form['buttons']['delete']['#submit'][] = '_revisioning_delete_submit';
     }
@@ -53,7 +61,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_form_FORM_ID_form_alter().
+ * Implements hook_form_FORM_ID_form_alter().
  *
  * On content type edit form, add the "New revision in draft, pending moderation"
  * tick-box and a couple of radio-boxes to select the new revision and
@@ -76,13 +84,13 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
     '#options' => array(
       NEW_REVISION_WHEN_NOT_PENDING => t('Only when saving %type content that is not already in draft/pending moderation', array('%type' => $content_type)),
       NEW_REVISION_EVERY_SAVE       => t('Every time %type content is updated, even when saving content in draft/pending moderation', array('%type' => $content_type))),
-    '#default_value' => (int)variable_get('new_revisions_'. $content_type, NEW_REVISION_WHEN_NOT_PENDING),
+    '#default_value' => (int)variable_get('new_revisions_' . $content_type, NEW_REVISION_WHEN_NOT_PENDING),
     '#description' => t('Use less disk space and avoid cluttering your revisions list. With the first option ticked, modifications are saved to the same copy (i.e. no additional revisions are created) until the content is published.')
     );
   $form['workflow']['revisioning']['revisioning_auto_publish'] = array(
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
-    '#default_value' => (int)variable_get('revisioning_auto_publish_'. $content_type, FALSE),
+    '#default_value' => (int)variable_get('revisioning_auto_publish_' . $content_type, FALSE),
     '#description' => t('If this box is ticked and the logged-in user has the "publish revisions" permission, then any draft of type %type is published immeditaley upon saving, without further review.', array('%type' => $content_type))
   );
 }
@@ -90,14 +98,14 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
 /**
  * Return a confirmation page for publishing a revision.
  */
-function revisioning_publish_confirm($form_state, $node) {
+function revisioning_publish_confirm($form, &$form_state, $node) {
   $form['node_id']  = array('#type' => 'value', '#value' => $node->nid);
   $form['title']    = array('#type' => 'value', '#value' => $node->title);
   $form['revision'] = array('#type' => 'value', '#value' => $node->vid);
   $form['type']     = array('#type' => 'value', '#value' => $node->type);
   return confirm_form($form,
     t('Are you sure you want to publish this revision of %title?', array('%title' => $node->title)),
-    'node/'. $node->nid .'/revisions',
+    'node/' . $node->nid . '/revisions',
     t('Publishing this revision will make it visible to the public.'),
     t('Publish'), t('Cancel'));
 }
@@ -117,7 +125,7 @@ function revisioning_publish_confirm_submit($form, &$form_state) {
 /**
  * Return a confirmation page for unpublishing the node.
  */
-function revisioning_unpublish_confirm($form_state, $node) {
+function revisioning_unpublish_confirm($form, &$form_state, $node) {
   $form['node_id'] = array('#type' => 'value', '#value' => $node->nid);
   $form['title']   = array('#type' => 'value', '#value' => $node->title);
   $form['type']    = array('#type' => 'value', '#value' => $node->type);
@@ -134,7 +142,7 @@ function revisioning_unpublish_confirm($form_state, $node) {
 function revisioning_unpublish_confirm_submit($form, &$form_state) {
   $nid = $form_state['values']['node_id'];
   _revisioning_unpublish_revision($nid);
-//$type = $form_state['values']['type']; // machine name, eg. 'story' rather than 'Story'
+//$type = $form_state['values']['type']; // machine name, eg. 'page' rather than 'Basic page'
   $title = $form_state['values']['title'];
   drupal_set_message(t('%title is no longer publicly visible.', array('%title' => $title)));
   // Redirect to the same page as publish and revert
@@ -142,8 +150,9 @@ function revisioning_unpublish_confirm_submit($form, &$form_state) {
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter(), see
- * node.pages.inc/node_revision_revert_confirm()
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @see node.pages.inc/node_revision_revert_confirm()
  */
 function revisioning_form_node_revision_revert_confirm_alter(&$form, &$form_state) {
   $node = $form['#node_revision'];
@@ -155,8 +164,9 @@ function revisioning_form_node_revision_revert_confirm_alter(&$form, &$form_stat
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter(), see
- * node.pages.inc/node_revision_delete_confirm()
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @see node.pages.inc/node_revision_delete_confirm()
  *
  * We only add "pre" submit handler, because "post delete" event is already
  * available via hook_nodeapi().
@@ -230,9 +240,9 @@ function _revisioning_show_pending_nodes($access = 'view', $user_filter = NO_FIL
 function _revisioning_set_info_message() {
   if (user_access('publish revisions')) {
     $moderated_types = array();
-    foreach (node_get_types() as $type) {
-      if (node_tools_content_is_moderated($type->type) &&
-        (user_access('view revisions') || user_access('view revisions of any '. $type->type .' content'))) {
+    foreach (node_type_get_types() as $type) {
+      if (revisioning_content_is_moderated($type->type) &&
+        (user_access('view revisions') || user_access('view revisions of any ' . $type->type . ' content'))) {
         $moderated_types[] = $type->name;
       }
     }
@@ -255,7 +265,7 @@ function _revisioning_form_submit($form, &$form_state) {
   $nid = $form['#node']->nid; // Don't use $form_state['nid'], will NOT be empty for a new node
   // Don't redirect when creating new node or when the displayed vid is the current
   if (!empty($nid) && ($vid = revisioning_get_latest_revision_id($nid)) &&
-    $vid != node_tools_get_current_node_revision_id($nid)) {
+    $vid != revisioning_get_current_node_revision_id($nid)) {
       $form_state['redirect'] = "node/$nid/revisions/$vid/view";
   }
 }

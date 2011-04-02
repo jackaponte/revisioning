@@ -25,6 +25,6 @@ class revisioning_handler_field_node_number_of_revisions extends views_handler_f
 
   function render($values) {
     $nid = $values->{$this->aliases['nid']};
-    return node_tools_get_number_of_revisions($nid);
+    return revisioning_get_number_of_revisions($nid);
   }
 }

@@ -23,20 +23,20 @@ class revisioning_handler_filter_node_revision_moderation extends views_handler_
     }
     $this->ensure_my_table();
     if (empty($moderated_content_types)) {
-      if (isset($this->value[0]) && $this->value[0] == REVISIONING_MODERATED) {
+      if ($this->value[0] == REVISIONING_MODERATED) {
         // None of the content types are moderated, so return nothing
         $this->query->add_where($this->options['group'], '1 = 0');
       }
     }
     else {
-      $where_clause = $this->table_alias .'.type IN ('. implode(',', $moderated_content_types) .')';
-      if (isset($this->value[0]) && $this->value[0] == REVISIONING_NOT_MODERATED) {
-        $where_clause = "!($where_clause)";
+      $where_expression = $this->table_alias . '.type IN (' . implode(',', $moderated_content_types) . ')';
+      if ($this->value[0] == REVISIONING_NOT_MODERATED) {
+        $where_expression = "!($where_expression)";
       }
       if ($this->operator == 'not in') {
-        $where_clause = ($where_clause[0] == '!') ? drupal_substr($where_clause, 1) : "!($where_clause)";
+        $where_expression = ($where_expression[0] == '!') ? drupal_substr($where_expression, 1) : "!($where_expression)";
       }
-      $this->query->add_where($this->options['group'], $where_clause);
+      $this->query->add_where_expression($this->options['group'], $where_expression);
     }
   }
 

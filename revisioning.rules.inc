@@ -9,7 +9,7 @@
 /*************************** Rules Conditions ********************************/
 
 /*
- * Implementation of hook_rules_condition_info().
+ * Implements hook_rules_condition_info().
  */
 function revisioning_rules_condition_info() {
   return array(
@@ -79,7 +79,7 @@ function revisioning_node_has_pending_label($settings, $argument_labels) {
 /************************** Rules Events **************************************/
 
 /**
- * Implementation of hook_rules_event_info().
+ * Implements hook_rules_event_info().
  */
 function revisioning_rules_event_info() {
   $default = array(
@@ -148,7 +148,7 @@ function _revisioning_rules_event_arguments() {
  * Current revision author argument handler.
  */
 function revisioning_events_argument_current_revision_author($node) {
-  $current_vid = node_tools_get_current_node_revision_id($node->nid);
+  $current_vid = revisioning_get_current_node_revision_id($node->nid);
   $uid = $node->revision_uid;
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
@@ -170,7 +170,7 @@ function revisioning_events_argument_target_revision_author($node) {
  * Current revision event argument handler.
  */
 function revisioning_events_argument_current_revision($node) {
-  $current_vid = node_tools_get_current_node_revision_id($node->nid);
+  $current_vid = revisioning_get_current_node_revision_id($node->nid);
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return $current;
@@ -181,7 +181,7 @@ function revisioning_events_argument_current_revision($node) {
 /*************************** Rules Actions ************************************/
 
 /**
- * Implementation of hook_rules_action_info().
+ * Implements hook_rules_action_info().
  */
 function revisioning_rules_action_info() {
   $default = array(
@@ -229,7 +229,7 @@ function revisioning_rules_loaded_current_label($settings, $argument_labels) {
  * Action: load current revision of provided node.
  */
 function revisioning_rules_action_load_current($node) {
-  $current_vid = node_tools_get_current_node_revision_id($node->nid);
+  $current_vid = revisioning_get_current_node_revision_id($node->nid);
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return array('loaded_current_revision' => $current);
