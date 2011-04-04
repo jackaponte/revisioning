@@ -265,7 +265,7 @@ function revisioning_menu() {
     );
   }
 
-  // Finally, the Revisioning configuration menu item
+  // Finally, the Revisioning configuration menu item, under Media
   $items['admin/config/media/revisioning'] = array(
     'title' => 'Revisioning',
     'description' => 'Configure how links to view and edit content behave.',
@@ -343,14 +343,6 @@ function revisioning_menu_alter(&$items) {
     'type' => MENU_LOCAL_TASK, // was: MENU_DEFAULT_LOCAL_TASK; changed for Smart tabs
     'weight' => -20,
   );
-
-  // Apart from administrators, allow those with 'administer actions' permission
-  // to configure the revisioning triggers.
-  if (module_exists('trigger')) {
-//    $items['admin/structure/trigger/revisioning'] = array(
-//      'access arguments' => array('administer actions')
-//    );
-  }
 }
 
 /**
@@ -505,7 +497,7 @@ function revisioning_node_prepare($node) {
 function revisioning_node_presave(&$node) {
   revisioning_set_basic_node_revision_info($node);
   if (isset($node->revision_moderation) && $node->revision_moderation) { // Tick-box on edit form, not set upon creation
-    $node->is_pending = _revisioning_node_is_pending($node); // set by revisioning_node_load
+    $node->is_pending = _revisioning_node_is_pending($node); // set by revisioning_node_load, if not new
     if ($node->revision && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
       drupal_set_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
       // Update the $node object just before it is saved to the db

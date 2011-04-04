@@ -144,42 +144,20 @@ function _revisioning_node_is_pending($node) {
  * Also, for "pre" operations vetoing mechanics could be implemented, so it
  * would be possible to veto an operation via hook_revisionapi(). For example,
  * when the hook is returning FALSE, operation will be vetoed.
- *
- * @TODO: Add more operations if needed.
  */
 function revisioning_revisionapi($op, $node) {
   switch ($op) {
-    case 'pre revert':
-      // Invoke corresponding Rules event
-      if (module_exists('rules')) {
-        rules_invoke_event('revisioning_pre_revert', $node);
-      }
-      break;
-
-    case 'post revert':
-      // Invoke the revisioning trigger passing 'revert' as the operation
-      if (module_exists('trigger')) {
-        module_invoke_all('revisioning', 'revert', $node, $node->vid);
-      }
-      // Invoke corresponding Rules event
-      if (module_exists('rules')) {
-        rules_invoke_event('revisioning_post_revert', $node);
-      }
-      break;
 
     case 'pre publish':
-      // Invoke corresponding Rules event
       if (module_exists('rules')) {
         rules_invoke_event('revisioning_pre_publish', $node);
       }
       break;
 
-    case 'post publish':
-      // Invoke the revisioning trigger passing 'publish' as the operation
-      if (module_exists('trigger')) {
-        module_invoke_all('revisioning', 'publish', $node);
-      }
-      // Invoke corresponding Rules event
+    case 'post publish': // called from _revisioning_publish_revision
+      // Invoke hook_revision_publish() triggers passing the node as an arg
+      module_invoke_all('revision_publish', $node);
+
       if (module_exists('rules')) {
         rules_invoke_event('revisioning_post_publish', $node);
       }
@@ -188,19 +166,31 @@ function revisioning_revisionapi($op, $node) {
   //case 'pre unpublish':
       // Not implemented: do we really need it ?
 
-    case 'post unpublish':
-      // Invoke the revisioning trigger passing 'unpublish' as the operation
-      if (module_exists('trigger')) {
-        module_invoke_all('revisioning', 'unpublish', $node);
-      }
-      // Invoke corresponding Rules event
+    case 'post unpublish': // called from _revisioning_unpublish_revision()
+      // Invoke hook_revision_unpublish triggers passing the node as an arg
+      module_invoke_all('revision_unpublish', $node);
+
       if (module_exists('rules')) {
         rules_invoke_event('revisioning_post_unpublish', $node);
       }
       break;
 
+    case 'pre revert':
+      if (module_exists('rules')) {
+        rules_invoke_event('revisioning_pre_revert', $node);
+      }
+      break;
+
+    case 'post revert': // called from revisioning_revert_confirm_post_submit()
+      // Invoke hook_revision_revert() triggers passing the node as an arg
+      module_invoke_all('revision_revert', $node);
+
+      if (module_exists('rules')) {
+        rules_invoke_event('revisioning_post_revert', $node);
+      }
+      break;
+
     case 'pre delete':
-      // Invoke corresponding Rules event
       if (module_exists('rules')) {
         rules_invoke_event('revisioning_pre_delete', $node);
       }
@@ -350,7 +340,7 @@ function _revisioning_unpublish_revision(&$node) {
 
 /**
  * Make the supplied revision of the node current and publish it.
- * It is the caller's responsibility to provide proper revision.
+ * It is the caller's responsibility to provide a proper revision.
  * Note that no check is made as to whether the initiating user has permission
  * to publish this revision.
  *
@@ -358,8 +348,6 @@ function _revisioning_unpublish_revision(&$node) {
  *  Target $node object (loaded with target revision) or nid of target node
  * @param $vid
  *  optional vid of revision to make current, if provided $node is not object.
- *
- * @TODO: Shouldn't we invoke hook_nodeapi('update'..) too, since we are updating node ?
  */
 function _revisioning_publish_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
@@ -396,9 +384,11 @@ function _revisioning_publish_revision(&$node, $vid = NULL) {
  *   publish
  */
 function _revisioning_publish_latest_revision(&$node) {
-  // Get latest pending revision or take the current provided it's UNpublished
-  $latest_pending = array_shift(_revisioning_get_pending_revisions($node->nid));
-  if (!$latest_pending && !$node->status && $node->is_current) {
+  // Get the latest pending revision
+  $pending_revisions = _revisioning_get_pending_revisions($node->nid);
+  $latest_pending = array_shift($pending_revisions);
+  // If there is no pending revision, take the current revision, provided it's UNpublished
+  if (!$latest_pending && $node->is_current && !$node->status) {
     _revisioning_publish_revision($node);
     return TRUE;
   }
