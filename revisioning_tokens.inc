@@ -48,7 +48,7 @@ function revisioning_token_info() {
     'description' => t("The title of the revision")
   );
   $info['tokens']['revision']['vid'] = array(
-    'name' => t("Revision id"),
+    'name' => t("Revision ID"),
     'description' => t("The unique ID of the revision"),
   );
   return $info;
@@ -89,42 +89,3 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
   }
   return $replacements;
 }
-
-/**
- * Implements hook_token_values().
- *
-function revisioning_token_values($type, $object = NULL, $options = array()) {
-  $values = array();
-  switch ($type) {
-    case 'node':
-      $values['vid'] = $object->vid;
-      $values['revision-title'] = $object->title;
-      _set_revision_author_values($object->revision_uid, $values);
-      break;
-
-    case 'op':
-      switch ($object) {
-        case 'publish':
-        case 'revert':
-        case 'unpublish':
-          $nid = arg(1);
-          $revision = node_load($nid, revisioning_get_current_node_revision_id($nid));
-          $values['vid'] = $revision->vid;
-          $values['revision-title'] = $revision->title;
-          _set_revision_author_values($revision->revision_uid, $values);
-      }
-      break;
-  }
-  return $values;
-}
-
-function _set_revision_author_values($uid, &$values) {
-  $result = db_query("SELECT name, mail FROM {users} WHERE uid = :uid", array(':uid' => $uid));
-  $account = $result[0];
-  $values['revision-author-uid'] = $uid;
-  $values['revision-author-name'] = check_plain($account->name);
-  $values['revision-author-name-raw'] = $account->name;
-  $values['revision-author-mail'] = check_plain($account->mail);
-  $values['revision-author-mail-raw'] = $account->mail;
-}
- */
