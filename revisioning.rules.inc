@@ -89,19 +89,19 @@ function revisioning_rules_event_info() {
   );
   $events = array(
     'revisioning_post_unpublish' => $default + array(
-      'label' => t('Node has been unpublished'),
+      'label' => t('Content has been unpublished'),
     ),
     'revisioning_post_publish' => $default + array(
       'label' => t('Pending revision has been published'),
     ),
     'revisioning_post_revert' => $default + array(
-      'label' => t('Node has been reverted to revision'),
+      'label' => t('Content has been reverted to revision'),
     ),
     'revisioning_pre_delete' => $default + array(
-      'label' => t('Node revision is going to be deleted'),
+      'label' => t('Content revision is going to be deleted'),
     ),
     'revisioning_pre_revert' => $default + array(
-      'label' => t('Node is going to be reverted to revision'),
+      'label' => t('Content is going to be reverted to revision'),
     ),
   );
   return $events;

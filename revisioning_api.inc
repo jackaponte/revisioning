@@ -76,7 +76,7 @@ function revisioning_get_current_node_revision_id($nid) {
  * of the latest revision.
  * This is irrespective of whether this latest revision is pending or not,
  * unless TRUE is specified for the second argument, in which case the uid
- * of the current revision (published or not) is returned.
+ * of the creator of the current revision (published or not) is returned.
  *
  * @param $nid
  *  The id of the node whose most recent editor id is to be returned.
@@ -489,8 +489,8 @@ function _revisioning_get_pending_revisions($nid) {
  *  title, timestamp and name of user that created the revision
  */
 function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms = FALSE) {
-  $sql_select = 'SELECT n.type, n.status, r.vid, r.title, r.log, r.uid, r.timestamp, u.name';
-  $sql_from   = ' FROM {node_revision} r LEFT JOIN {node} n ON n.vid=r.vid INNER JOIN {users} u ON u.uid=r.uid';
+  $sql_select = 'SELECT n.vid AS current, r.vid, r.status, r.title, r.log, r.uid, r.timestamp, u.name';
+  $sql_from   = ' FROM {node_revision} r INNER JOIN {node} n ON r.nid=n.nid INNER JOIN {users} u ON r.uid=u.uid';
   $sql_where  = ' WHERE r.nid = :nid ORDER BY r.vid DESC';
   if ($include_taxonomy_terms) {
     $sql_select .= ', ttd.name AS term';

@@ -3,8 +3,9 @@
 /**
  * @file
  * Allows content to be updated and reviewed before submitting it for
- * publication while the current live revision remains unchanged and publicly
- * visible until the changes have been reviewed by a moderator.
+ * publication, while the current live revision remains unchanged and publicly
+ * visible until the changes have been reviewed and found fit for publication
+ * by a moderator.
  */
 
 define('REVISIONING_LOAD_CURRENT', 0); // node/%node/view, node/%node/edit opens current revision
@@ -528,10 +529,10 @@ function revisioning_node_insert($node) {
  * Implements hook_node_update().
  */
 function revisioning_node_update(&$node) {
-  if ($node->revision_moderation && $node->current_revision_id // i.e. set and not 0
+  if ($node->revision_moderation && isset($node->current_revision_id)
       && $node->current_revision_id != $node->vid) {
     // Resetting title and vid back to their originial values, thus creating pending revision.
-    // @TODO do we need to carray node_revision.status flag across?
+    // @TODO do we need to carry node_revision.status flag across?
     db_query("UPDATE {node} SET vid = :vid, title = :title WHERE nid = :nid", array(
        ':vid' => $node->current_revision_id,
        ':title' => $node->current_title,
@@ -662,7 +663,7 @@ function revisioning_user_node_access($revision_op, $node) {
     case 'compare to current':
     case 'view revisions':
     case 'view revision list':
-      if (user_access('view revisions', $user)) { // node.module
+      if (user_access('view revisions', $user)) {
         break;
       }
       $type = check_plain($node->type);
@@ -790,9 +791,9 @@ function _revisioning_access_node_revision($revision_op, $node) {
     $access = module_grants_node_revision_access($revision_op, $node);
   }
   else {
+    $node_op = revisioning_user_node_access($revision_op, $node);
     // Fall back to core to assess permissions (even though they suck)
-    $access = ($node_op = revisioning_user_node_access($revision_op, $node)) &&
-      node_access($node_op, $node); // will call hook_node_access()
+    $access = $node_op && node_access($node_op, $node); // this will invoke hook_node_access()
   }
   return $access;
 }
@@ -803,13 +804,23 @@ function _revisioning_access_node_revision($revision_op, $node) {
  * This gets invoked from node.module/node_access() after it has checked the
  * standard node permissions using node_node_access() and just before it checks
  * the node_access grants table. 
- * If modules are involved that place entries in node_access we should return
- * NODE_ACCESS_IGNORE so as not to interfere. 
- * For now assume there aren't any such modules and return NODE_ACCESS_ALLOW
- * @TODO
+ * We basically return "don't care" except for one View case, which replicates
+ * the node.module ("don't care" in this case would result in "access denied").
  */
-function revisioning_node_access($node, $op, $account) {
-  return isset($node->revision_moderation) ? NODE_ACCESS_ALLOW : NODE_ACCESS_IGNORE;
+function revisioning_node_access($node, $node_op, $account) {
+  // Taken from node.module/node_access():
+  // If no modules implement hook_node_grants(), the default behaviour is to
+  // allow all users to view published nodes, so reflect that here.
+  if ($node_op == 'view' && ($node->status || revisioning_user_node_access('view revisions', $node))) {
+    $enabled_access_modules = array();
+    foreach (module_implements('node_grants') as $module) {
+      $enabled_access_modules[] = $module;
+    }
+    if (empty($enabled_access_modules)) {
+      return NODE_ACCESS_ALLOW;
+    }
+  }
+  return NODE_ACCESS_IGNORE;
 }
 
 /**
@@ -989,10 +1000,11 @@ function _revisioning_edit_revision($node) {
   return drupal_get_form($node->type . '_node_form', $node);
 }
 
-/**
- * Use diff's compare callback to compare specific revision to the current one
- */
 if (module_exists('diff')) {
+  /**
+   * Use diff's diff_diffs_show() function to compare specific revision to the
+   * current one.
+   */
   function _revisioning_compare_to_current_revision($node) {
     module_load_include('inc', 'diff', 'diff.pages'); // for diff_diffs_show()
     // Make sure that latest of the two revisions is on the right

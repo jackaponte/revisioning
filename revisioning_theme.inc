@@ -50,13 +50,11 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
 
   $revision_ids = array();
   foreach ($revisions as $revision) {
-    if (!empty($revision->type)) {
-      // This is the current revision, holding publication status and content type
-      $content_type = $revision->type;
+    $vid = $revision->vid;
+    if ($vid == $revision->current) {
       $title = $revision->title;
       $published = $revision->status;
     }
-    $vid = $revision->vid;
     $revision_ids[$vid] = ''; // no text next to check boxes (see below)
     $base_url = "node/$nid/revisions/$vid";
 
@@ -80,12 +78,11 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
   } // foreach
 
   drupal_set_message(format_plural(count($revisions),
-    '@publication_status @content_type %title has only one revision',
-    '@publication_status @content_type %title has @count revisions.',
+    '%title is @publication_status. It has only one revision',
+    '%title is @publication_status. It has @count revisions.',
     array(
-     '@publication_status' => ($published ? t('Published') : t('Unpublished')),
-     '@content_type' => $content_type,
      '%title' => $title,
+     '@publication_status' => ($published ? t('published') : t('NOT published')),
     )
   ));
   if (count($revisions) >= 2 && module_exists('diff')) {

@@ -4,17 +4,6 @@
  * @file
  * Add tokens pertaining to the Revisioning module.
  *
- * For examples see the Token module, files token/token_<module>.inc
- *
- * Added to the set are the following, which are not provided by token_node.inc
- *   vid: Node revision ID
- *   revision-title: Revision title
- *   revision-author-uid: Revision author's user id
- *   revision-author-name: Revision author's user name
- *   revision-author-name-raw: Revision author's user name -- aw user input.
- *   revision-author-mail: Revision author's e-mail
- *   revision-author-mail-raw: Revision author's e-mail -- raw user input.
- *
  * @ingroup token
  */
 
@@ -25,7 +14,7 @@ function revisioning_token_info() {
   // First specify token type(s)
   $info['types']['revision'] = array(
     'name' => t("Revisions"),
-    'description' => t('Tokens related to revisions of individual content items, or "node revisions"'),
+    'description' => t('Tokens related to revisions of individual content items, or "node revisions".'),
     'needs-data' => 'node',
   );
   // Then specify the tokens
@@ -65,20 +54,24 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
 
     foreach ($tokens as $name => $original) {
       switch ($name) {
+
         case 'title':
           $title = $revision->title;
           $replacements[$original] = empty($options['sanitize']) ? $title : check_plain($title);
           break;
+
         case 'body':
           $text = $revision->body[$revision->language][0]['value'];
           $replacements[$original] = empty($options['sanitize']) ? $text : $check_plan($text);
           break;
+
         case 'vid':
           $replacements[$original] = $revision->vid;
           break;
       }
     }
     // Chained token relationships for revision author and revision timestamp
+    // These fan out into sub-token fields, e.g author:name, author:mail etc.
     if ($author_tokens = token_find_with_prefix($tokens, 'author')) {
       $author = user_load($revision->revision_uid);
       $replacements += token_generate('user', $author_tokens, array('user' => $author), $options);
