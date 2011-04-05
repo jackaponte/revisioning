@@ -72,6 +72,29 @@ function revisioning_get_current_node_revision_id($nid) {
 }
 
 /**
+ * Get the id of the user who last edited the supplied node, ie. the author
+ * of the latest revision.
+ * This is irrespective of whether this latest revision is pending or not,
+ * unless TRUE is specified for the second argument, in which case the uid
+ * of the current revision (published or not) is returned.
+ *
+ * @param $nid
+ *  The id of the node whose most recent editor id is to be returned.
+ * @param $current
+ *  Whether the uid of the current or very latest revision should be returned.
+ * @return
+ *  A single number being the user id (uid).
+ */
+function revisioning_get_last_editor($nid, $current = FALSE) {
+  $sql = ($current) 
+    ? "SELECT vid FROM {node} WHERE nid = :nid"
+    : "SELECT MAX(vid) FROM {node_revision} WHERE nid = :nid";
+  $vid = db_query($sql, array(':nid' => $nid))->fetchField();
+  $result = db_query("SELECT uid FROM {node_revision} WHERE vid = :vid", array(':vid' => $vid));
+  return $result->fetchField();
+}
+
+/**
  * Return whether the currenly loaded revision is the current one.
  * @param $node
  * @return
