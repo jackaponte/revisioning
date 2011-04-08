@@ -8,8 +8,8 @@
  * by a moderator.
  */
 
-define('REVISIONING_LOAD_CURRENT', 0); // node/%node/view, node/%node/edit opens current revision
-define('REVISIONING_LOAD_LATEST',  1); // node/%node/view, node/%node/edit opens latest revison
+define('REVISIONING_LOAD_CURRENT', 0); // node/%nid/view, node/%nid/edit opens current revision
+define('REVISIONING_LOAD_LATEST',  1); // node/%nid/view, node/%nid/edit opens latest revison
 
 define('NEW_REVISION_WHEN_NOT_PENDING', 0);
 define('NEW_REVISION_EVERY_SAVE', 1);
@@ -37,7 +37,7 @@ function revisioning_help($path, $arg) {
       $s = t('To edit, publish or delete one of the revisions below, click on its saved date.');
       break;
     case 'admin/structure/trigger/revisioning':
-      $s = t("Below you can assign actions to run when certain publication-related events happen. For example, you could send an e-mail to an author when their content is pubished.");
+      $s = t("Below you can assign actions to run when certain publication-related events happen. For example, you could send an e-mail to an author when their pending content is pubished.");
       break;
     case 'accessible-content/i-created/pending':
       $s = t('Showing all <em>pending</em> content <em>you created</em> and still have at least view access to.');
@@ -88,10 +88,10 @@ function revisioning_permission() {
     $machine_name = check_plain($type->type);
     $permissions['view revisions of own ' . $machine_name . ' content'] = array(
       'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)),
-      'description' => '');
+      'description' => 'Applies to both published and unpublished content.');
     $permissions['view revisions of any ' . $machine_name . ' content'] = array(
       'title' => t('%type-name: View revisions of any content', array('%type-name' => $type->name)),
-      'description' => '');
+      'description' => 'Applies to both published and unpublished content.');
   }
   return $permissions;
 }
@@ -105,6 +105,189 @@ function revisioning_permission() {
 function revisioning_menu() {
   $items = array();
 
+  // Start with the Revisioning configuration menu item, put it under Media
+  $items['admin/config/media/revisioning'] = array(
+    'title' => 'Revisioning',
+    'description' => 'Configure how links to view and edit content behave.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revisioning_admin_configure'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'revisioning.admin.inc'
+  );
+
+  // 3 primary tabs for 'node/%node': View tab, Edit tab, Revisions tab ...
+  //
+  // The '%node' means that node_load() will be called to load the node with
+  // that %node id. To have full control over which revision is loaded when
+  // a path like 'node/123' is clicked, we use our own load function instead, 
+  // i.e. nid_load().
+  // We throw away (unset) the obsolete 'node/%node' menu items in 
+  // revisioning_menu_alter();
+
+  $items['node/%nid'] = array(
+    'access callback' => '_revisioning_view_edit_access_callback',
+    'access arguments' => array('view', 1),
+    'page callback' => '_revisioning_view',
+    'page arguments' => array(1)
+  );
+  // This is the MENU_DEFAULT_LOCAL_TASK, so inherits the above.
+  $items['node/%nid/view'] = array(
+    'title callback' => '_revisioning_title_for_tab',
+    'title arguments' => array(1, FALSE),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10
+  );
+
+  $items['node/%nid/edit'] = array(
+    'access callback' => '_revisioning_view_edit_access_callback',
+    'access arguments' => array('edit', 1),
+    'page callback' => '_revisioning_edit',
+    'page arguments' => array(1),
+    'title callback' => '_revisioning_title_for_tab',
+    'title arguments' => array(1, TRUE),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE, // ?? taken from node.module
+    'weight' => 0,
+    'file' => 'node.pages.inc', // for node_form(), called indirectly from _revisioning_edit()
+    'file path' => drupal_get_path('module', 'node'),
+  );
+
+  // 'Revisions' tab remains, but points to new page callback, allowing users
+  // to pick the revision to view, edit, publish, revert, unpublish, delete.
+  // Need to override _node_revision_access() call back as it disallows access
+  // to the 'Revisions' tab when there's only one revision, which will prevent
+  // users from getting to the publish/unpublish links.
+  $items['node/%nid/revisions'] = array(
+    'title' => 'Revisions',
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('view revision list', 1),
+    'page callback' => '_revisioning_present_node',
+    'page arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2
+  );
+
+  // Plain link, not a tab, to allow users to unpublish a node.
+  $items['node/%nid/unpublish'] = array(
+  //'title' => t(Unpublish current revision'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revisioning_unpublish_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('unpublish current revision', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Revision tab local subtasks (i.e. secondary tabs), up to 8 of them:
+  // list, view, edit, publish, unpublish, revert, delete and compare.
+  // All revision operations 'node/%nid/revisions/%vid/<op>' are defined as
+  // local subtasks (subtabs) secondary to the primary 'node/%nid/revisions'
+  // local task (primary tab).
+
+  // Subtab to Revisions primary tab to allow going back to the revisions list
+  // without clicking the primary tab for a second time (which also works).
+  $items['node/%nid/revisions/list'] = array(
+    'title' => 'List all revisions',
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('view revision list', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -20,
+  );
+
+  // View revision local subtask
+  $items['node/%nid/revisions/%vid/view'] = array(
+    'title' => 'View',
+    'load arguments' => array(3),
+    'page callback' => '_revisioning_view_revision',
+    'page arguments' => array(1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('view revisions', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -10,
+  //'tab_parent' => 'node/%/revisions',
+  );
+  // Edit revision local subtask
+  $items['node/%nid/revisions/%vid/edit'] = array(
+    'title' => 'Edit',
+    'load arguments' => array(3),
+    'page callback' => '_revisioning_edit_revision',
+    'page arguments' => array(1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('edit revisions', 1),
+    'file' => 'node.pages.inc',
+    'file path' => drupal_get_path('module', 'node'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -7,
+  //'tab_parent' => 'node/%/revisions',
+  );
+  // Publish revision local subtask
+  $items['node/%nid/revisions/%vid/publish'] = array(
+    'title' => 'Publish this',
+    'load arguments' => array(3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revisioning_publish_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('publish revisions', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -4,
+  //'tab_parent' => 'node/%/revisions',
+  );
+  // Unpublish node local subtask
+  $items['node/%nid/revisions/%vid/unpublish'] = array(
+    'title' => 'Unpublish this',
+    'load arguments' => array(3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revisioning_unpublish_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('unpublish current revision', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -3,
+  //'tab_parent' => 'node/%/revisions',
+  );
+  // Revert to revision local subtask.
+  $items['node/%nid/revisions/%vid/revert'] = array(
+    'title' => 'Revert to this',
+    'load arguments' => array(3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('node_revision_revert_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('revert revisions', 1),
+    'file' => 'node.pages.inc',
+    'file path' => drupal_get_path('module', 'node'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -2,
+  //'tab_parent' => 'node/%/revisions',
+  );
+  // Delete revision local subtask.
+  // Difference from core version is %vid that's served by vid_to_arg() function.
+  $items['node/%nid/revisions/%vid/delete'] = array(
+    'title' => 'Delete',
+    'load arguments' => array(3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('node_revision_delete_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('delete revisions', 1),
+    'file' => 'node.pages.inc',
+    'file path' => drupal_get_path('module', 'node'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  //'tab_parent' => 'node/%/revisions',
+  );
+
+  // If Diff module is enabled, provide a compare local subtask
+  if (module_exists('diff')) {
+    $items['node/%nid/revisions/%vid/compare'] = array(
+      'title' => 'Compare to current',
+      'load arguments' => array(3),
+      'page callback' => '_revisioning_compare_to_current_revision',
+      'page arguments' => array(1),
+      'access callback' => '_revisioning_access_node_revision',
+      'access arguments' => array('compare to current', 1),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 0,
+    //'tab_parent' => 'node/%/revisions',
+    );
+  }
+/*
   if (module_exists('module_grants_monitor')) {
     // Add a tab to the 'I created' tab (defined in module_grants_monitor.module)
     $items['accessible-content/i-created/pending'] = array(
@@ -147,135 +330,7 @@ function revisioning_menu() {
       'weight' => -1
     );
   }
-
-  // Callback (not a tab) to allow users to unpublish a node.
-  // Note that is a node operation more so than a revision operation, but
-  // we let _revisioning_access_node_revision() handle access anyway.
-  $items['node/%node/unpublish'] = array(
-  //'title' => t(Unpublish current revision'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('revisioning_unpublish_confirm', 1),
-    'access callback' => '_revisioning_access_node_revision', // _revisioning_node_access ?
-    'access arguments' => array('unpublish current revision', 1),
-    'type' => MENU_CALLBACK,
-  );
-
-  // Revision tab local subtasks (i.e. secondary tabs), up to 7 of them:
-  //  view, edit, publish, unpublish, revert, delete and compare.
-  // All revision operations 'node/%node/revisions/%vid/<op>' are defined as
-  // local tasks (tabs) secondary to the primary 'node/%node/revisions' local
-  // task (tab).
-  // The tricky part is to always set "tab_parent", core does NOT figure this
-  // out based on the URL. %vid is optional, see vid_to_arg().
-  // Note: the MENU_DEFAULT_LOCAL_TASK for 'node/%node/revisions' is defined in
-  //       function revisioning_menu_alter()
-
-  // View revision local subtask
-  $items['node/%node/revisions/%vid/view'] = array(
-    'title' => 'View',
-    'load arguments' => array(3),
-    'page callback' => '_revisioning_view_revision',
-    'page arguments' => array(1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('view revisions', 1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -10,
-    'tab_parent' => 'node/%/revisions',
-  );
-  // Edit revision local subtask
-  $items['node/%node/revisions/%vid/edit'] = array(
-    'title' => 'Edit',
-    'load arguments' => array(3),
-    'page callback' => '_revisioning_edit_revision',
-    'page arguments' => array(1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('edit revisions', 1),
-    'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -7,
-    'tab_parent' => 'node/%/revisions',
-  );
-  // Publish revision local subtask
-  $items['node/%node/revisions/%vid/publish'] = array(
-    'title' => 'Publish this',
-    'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('revisioning_publish_confirm', 1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('publish revisions', 1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -4,
-    'tab_parent' => 'node/%/revisions',
-  );
-  // Unpublish node local subtask
-  $items['node/%node/revisions/%vid/unpublish'] = array(
-    'title' => 'Unpublish this',
-    'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('revisioning_unpublish_confirm', 1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('unpublish current revision', 1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -3,
-    'tab_parent' => 'node/%/revisions',
-  );
-  // Revert to revision local subtask.
-  // Difference from core version is %vid that's served by vid_to_arg() function.
-  $items['node/%node/revisions/%vid/revert'] = array(
-    'title' => 'Revert to this',
-    'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('node_revision_revert_confirm', 1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('revert revisions', 1),
-    'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => -2,
-    'tab_parent' => 'node/%/revisions',
-  );
-  // Delete revision local subtask.
-  // Difference from core version is %vid that's served by vid_to_arg() function.
-  $items['node/%node/revisions/%vid/delete'] = array(
-    'title' => 'Delete',
-    'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('node_revision_delete_confirm', 1),
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('delete revisions', 1),
-    'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 10,
-    'tab_parent' => 'node/%/revisions',
-  );
-
-  // If Diff module is enabled, provide a compare local subtask
-  if (module_exists('diff')) {
-    $items['node/%node/revisions/%vid/compare'] = array(
-      'title' => 'Compare to current',
-      'load arguments' => array(3),
-      'page callback' => '_revisioning_compare_to_current_revision',
-      'page arguments' => array(1),
-      'access callback' => '_revisioning_access_node_revision',
-      'access arguments' => array('compare to current', 1),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 0,
-      'tab_parent' => 'node/%/revisions',
-    );
-  }
-
-  // Finally, the Revisioning configuration menu item, under Media
-  $items['admin/config/media/revisioning'] = array(
-    'title' => 'Revisioning',
-    'description' => 'Configure how links to view and edit content behave.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('revisioning_admin_configure'),
-    'access arguments' => array('administer site configuration'),
-    'file' => 'revisioning.admin.inc'
-  );
-
+*/
   return $items;
 }
 
@@ -287,42 +342,12 @@ function revisioning_menu() {
  */
 function revisioning_menu_alter(&$items) {
 
-  // Primary tabs for 'node/%node': View tab, Edit tab, Revisions tab ...
-
-  // View tab can be either 'View current' or 'View latest'.
-  // It should be suppressed when the 'Revisions' tab shows the same revision,
-  // so we need a special access callback for this, which expands on the
-  // callback defined in Module Grants.
-  $items['node/%node']['access callback'] = $items['node/%node/view']['access callback'] = '_revisioning_view_edit_access_callback';
-  $items['node/%node']['access arguments']= $items['node/%node/view']['access arguments']= array('view', 1);
-  $items['node/%node']['page callback']   = $items['node/%node/view']['page callback']   = '_revisioning_view';
-  $items['node/%node']['page arguments']  = $items['node/%node/view']['page arguments']  = array(1);
-  // Not applying title callback to 'node/%node', see #782316
-  $items['node/%node/view']['title callback']  = '_revisioning_title_for_tab';
-  $items['node/%node/view']['title arguments'] = array(1, FALSE);
-
-  // Edit tab can be either 'Edit current' or 'Edit latest'.
-  // It should be suppressed when the 'Revisions' tab shows the same revision,
-  // so we need a special access callback for this, which expands on the
-  // callback defined in Module Grants.
-  $items['node/%node/edit']['access callback'] = '_revisioning_view_edit_access_callback';
-  $items['node/%node/edit']['access arguments']= array('edit', 1);
-  $items['node/%node/edit']['page callback']   = '_revisioning_edit';
-  $items['node/%node/edit']['title callback']  = '_revisioning_title_for_tab';
-  $items['node/%node/edit']['title arguments'] = array(1, TRUE);
-
-  // 'Revisions' tab remains but points to new page callback, allowing users to
-  // pick the revision to view, edit, publish, revert, unpublish, delete.
-  // Need to override _node_revision_access() call back as it disallows access
-  // to the 'Revisions' tab when there's only one revision, which will prevent
-  // users from getting to the publish/unpublish links.
-  $items['node/%node/revisions']['access callback'] = '_revisioning_access_node_revision';
-  $items['node/%node/revisions']['access arguments'] = array('view revision list', 1);
-  $items['node/%node/revisions']['page callback'] = '_revisioning_present_node';
-  $items['node/%node/revisions']['page arguments'] = array(1);
-
-  // Unset old menu items defined in node.module, as these are replaced by
-  // ones that use the %vid wildcard instead of % and have proper callbacks.
+  // Unset obsolete links defined in node.module, as revisioning_menu() 
+  // replaced these by with different node load functions and callbacks.
+  unset($items['node/%node']);
+  unset($items['node/%node/view']);
+  unset($items['node/%node/edit']);
+  unset($items['node/%node/revisions']);
   unset($items['node/%node/revisions/%/view']);
   unset($items['node/%node/revisions/%/revert']);
   unset($items['node/%node/revisions/%/delete']);
@@ -332,131 +357,50 @@ function revisioning_menu_alter(&$items) {
     $items['node/%node/revisions/view/%/%']['access callback'] = '_revisioning_access_node_revision';
     $items['node/%node/revisions/view/%/%']['access arguments'] = array('view revisions', 1);
   }
-  // This is here rather than in revisioning_menu() as Diff may redefine
-  // the node/%node/revisions/list item.
-  $items['node/%node/revisions/list'] = array(
-    'title' => 'List all revisions',
-    'access callback' => '_revisioning_access_node_revision',
-    'access arguments' => array('view revision list', 1),
-    'file' => 'node.pages.inc',
-    'module' => 'node',
-  //'file path' => drupal_get_path('module', 'node'),
-    'type' => MENU_LOCAL_TASK, // was: MENU_DEFAULT_LOCAL_TASK; changed for Smart tabs
-    'weight' => -20,
-  );
 }
 
 /**
- * Implements hook_nodeapi().
- *
- * This function is called serveral times during the node's life cycle, with
- * different node operations passed in.
- *
- * Typically when loading a node for viewing, the order is:
- *   'load', 'view', 'alter'
- *
- * When creating new content:
- *   Before displaying the creation form: 'prepare'
- *   When saving: 'validate', 'presave', 'insert'
- *
- * When editing an existing node:
- *   Before displaying the edit form: 'load', 'prepare'
- *   When saving: 'load', 'validate', 'presave', 'update'
- *
- * The same $op may be requested multiple times during the same HTTP request,
- * especially 'load'.
-
-function revisioning_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
-
-  switch ($op) {
-
-    case 'load': // called at the end of node_load()
-      revisioning_set_basic_node_revision_info($node);
-      // The revision_moderation flag may be overridden on the node edit form
-      // by users with the "administer nodes" permission
-      $node->revision_moderation = revisioning_content_is_moderated($node->type);
-      $node->is_pending = _revisioning_node_is_pending($node);
-
-      // Could use following, but this seems old style, i.e. when $node is not a &ref
-      //$node_extras['revision_moderation'] = $node->revision_moderation;
-      //$node_extras['is_pending'] = $node->is_pending;
-      break;
-
-    case 'view': // called from called from node_view() before $node is fully built
-      break;
-
-    case 'prepare': // presenting edit form
-      // Check that we're dealing with the current node, not its translation source
-      $current_nid = arg(1);
-      if (is_numeric($current_nid) && $current_nid == $node->nid) {
-        _revisioning_prepare_msg($node);
-      }
-      break;
-
-    case 'presave': // for edits, called from node_save(), prior to _node_save_revision()
-      revisioning_set_basic_node_revision_info($node);
-      if ($node->revision_moderation) { // Tick-box on edit form
-        $node->is_pending = _revisioning_node_is_pending($node);
-        if ($node->revision && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
-          drupal_set_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
-          // Update the $node object just before it is saved to the db
-          $node->revision = FALSE;
-        }
-        // Save title of current revision to restore at $op=='update' time
-        $node->current_title = db_result(db_query('SELECT title FROM {node} WHERE nid=%d', $node->nid));
-        if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
-          drupal_set_message(t('Auto-publishing this revision.'));
-          $node->status = TRUE;
-          // Make sure the 'update' does NOT reset vid, so that new revision becomes current
-          unset($node->current_revision_id);
-        }
-      }
-      break;
-
-    case 'insert': // new node, called from node_save(), after _node_save_revision()
-      _revisioning_insert_msg($node);
-      break;
-
-    case 'update':  // edited node, called from node_save(), after _node_save_revision()
-      if ($node->revision_moderation && $node->current_revision_id // i.e. set and not 0
-          && $node->current_revision_id != $node->vid) {
-        // Resetting title and vid back to their originial values, thus creating pending revision.
-        db_query("UPDATE {node} SET vid=%d, title='%s' WHERE nid=%d", $node->current_revision_id, $node->current_title, $node->nid);
-      //$node->is_pending = TRUE;
-      }
-      break;
-
-    case 'alter': // called from node_view() after $node is fully built for display
-      if (!$teaser && $node->nid == arg(1) && // don't show msg on page with many nodes
-        $node->revision_moderation && user_access('view revision status messages')) {
-        drupal_set_message(_revisioning_node_info_msg($node));
-      }
-      break;
-
-    case 'delete revision':
-      module_invoke_all('revisionapi', 'post delete', $node);
-      break;
-  }
-  return; // $node_extras;
-}
+ * Node load_function called for all 'node/%nid/...' menu items defined above.
+ * The default node_load() function from the node.module would have been fine,
+ * if it wasn't for bug [#1220272].
+ * node_load() first loads the {node} table data, then attaches to it the 
+ * {node_revision} data. If $vid is empty, we need to specify one, or the object
+ * returned may be inconsistent [#1220272]. We choose the current vid, as the
+ * user may not have permission to 'view revisions'. We don't know the details
+ * until the {node} part (e.g. node type) is loaded. So we do this and let
+ * the access callback _revisioning_view_edit_access_callback() assess further
+ * details.
  */
+function nid_load($nid, $vid = NULL) {
+  if (empty($vid)) {
+    // Work around D7 bug [#1120272] by passing current vid explicitly
+    $vid = revisioning_get_current_node_revision_id($nid);
+  }
+  return node_load($nid, $vid); // indirectly invokes hook_node_load()
+}
+
+/**
+ * Perform path manipulations for menu items containing the %vid wildcard.
+ * $map contains what arg() function returns, eg. $map[0]=='node', $map[1]=='123'.
+ * When vid is absent, return $map as an empty array. This seems to disable menu
+ * items which require a vid context to work. So on the page
+ * "node/123/revisions" we won't see tasks like "node/123/revisions/456/edit".
+ * @see http://drupal.org/node/500864
+ */
+function vid_to_arg($arg, &$map, $index) {
+  if (empty($arg)) {
+    //return revisioning_get_current_node_revision_id($nid = $map[1]);
+    $map = array();
+    return '';
+  }
+  return $arg;
+}
 
 /**
  * Implements hook_node_load().
  *
- * Typically when loading a node for viewing, the order is:
- *   'load', 'view', 'alter' (does 'alter' still exist in D7?)
- *
- * When creating new content:
- *   Before displaying the creation form: 'prepare'
- *   When saving: 'validate', 'presave', 'insert'
- *
- * When editing an existing node:
- *   Before displaying the edit form: 'load', 'prepare'
- *   When saving: 'load', 'validate', 'presave', 'update'
- *
- * The same op may occur multiple times during the same HTTP request, especially
- * 'load'.
+ * The same load op may occur multiple times during the same HTTP request, so
+ * hooray for caching!
  *
  * hook_node_load is called when viewing a single node (i.e. $nodes has one element)
  * node_load()        -> node_load_multiple() -> DrupalDefaultEntityController->attachLoad()
@@ -484,9 +428,14 @@ function revisioning_node_load($nodes, $types) {
  * Called when presenting edit form.
  */
 function revisioning_node_prepare($node) {
-  $current_nid = arg(1);
-  if (is_numeric($current_nid) && $current_nid == $node->nid) {
-    _revisioning_prepare_msg($node);
+  if (!empty($node->nid)) {
+    $count = _revisioning_get_number_of_revisions_newer_than($node->vid, $node->nid);
+    if ($count == 1) {
+      drupal_set_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
+    }
+    elseif ($count > 1) {
+      drupal_set_message(t('Please note there are !count revisions more recent than the one you are about to edit.', array('!count' => check_plain($count))), 'warning');
+    }
   }
 }
 
@@ -522,7 +471,12 @@ function revisioning_node_presave(&$node) {
  * New node.
  */
 function revisioning_node_insert($node) {
-  _revisioning_insert_msg($node);
+  if ($node->status) {
+    drupal_set_message(t('Initial revision created and published.'));
+  }
+  else {
+    drupal_set_message(t('Initial draft created, pending publication.'));
+  }
 }
 
 /**
@@ -542,73 +496,6 @@ function revisioning_node_update(&$node) {
 }
 
 /**
- * Implements hook_block_info().
- *
- * A block that may be placed on selected pages, alerting the moderator when
- * new content has been submitted for review. Shows titles of pending revisions
- * as a series of links. Clicking a link takes the moderator straight to the
- * revision in question.
- */
-function revisioning_block_info() {
-  $block['pending']['info'] = t('Pending revisions');
-  $block['pending']['cache'] = DRUPAL_NO_CACHE;
-  $block['pending']['weight'] = -10; // towards top of whatever region is chosen
-  $block['pending']['custom'] = FALSE; // block is implemented by this module;
-  return $block;
-}
-
-/**
- * Implements hook_block_configure().
- */
-function revisioning_block_configure($delta = 'pending') {
-  $form['revisioning_block_num_pending'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Maximum number of pending revisions displayed'),
-    '#default_value' => variable_get('revisioning_block_num_pending', 5),
-    '#description' => t('Note: the title of this block mentions the total number of revisions pending, which may be greater than the number of revisions displayed.')
-  );
-  $form['revisioning_block_order'] = array(
-    '#type' => 'radios',
-    '#title' => t('Order in which pending revisions are displayed'),
-    '#options' => array(
-      REVISIONS_BLOCK_OLDEST_AT_TOP => t('Oldest at top'),
-      REVISIONS_BLOCK_NEWEST_AT_TOP => t('Newest at top')),
-    '#default_value' => variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP),
-    '#description' => t('Note: order is based on revision timestamps.')
-  );
-  $form['revisioning_content_summary_page'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Page to go to when the block title is clicked'),
-    '#default_value' => variable_get('revisioning_content_summary_page', ''),
-    '#description' => t('When left blank this will default to %accessible_content, provided Module Grants Montior is enabled and the user has sufficient permissions. Otherwise %view_content or %admin_content will be used, subject to permissions.<br>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
-      '%accessible_content' => 'accessible-content',
-      '%view_content' => 'content-summary',
-      '%admin_content' => 'admin/content'))
-  );
-  return $form;
-}
-
-/**
- * Implements hook_block_save().
- */
-function revisioning_block_save($delta = '', $edit = array()) {
-  variable_set('revisioning_block_num_pending', (int)$edit['revisioning_block_num_pending']);
-  variable_set('revisioning_block_order', (int)$edit['revisioning_block_order']);
-  variable_set('revisioning_content_summary_page', $edit['revisioning_content_summary_page']);
-}
-
-/**
- * Implements hook_block_view().
- */
-function revisioning_block_view($delta = '') {
-  $order = variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP) == REVISIONS_BLOCK_OLDEST_AT_TOP ? 'ASC' : 'DESC';
-  $nodes = revisioning_get_nodes('update', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
-  if (!empty($nodes)) {
-    return _theme_block_pending_revisions($nodes);
-  }
-}
-
-/**
  * Implements hook_views_api().
  */
 function revisioning_views_api() {
@@ -616,30 +503,6 @@ function revisioning_views_api() {
     'api' => views_api_version(),
     'path' => drupal_get_path('module', 'revisioning') . '/views'
   );
-}
-
-/**
- * Perform path manipulations for menu items containing %vid wildcard. $map
- * contains what arg() function returns, eg. $map[0]=='node', $map[1]=='123'.
- *
- * When vid is absent, return $map as empty array. This seems to disable menu
- * items which require a vid context to work. So on the page
- * "node/123/revisions" we won't see tasks like "node/123/revisions/456/edit".
- *
- * An alternative implementation would be to substitute an empty vid with
- * current revision id. In that case we should also change the tab titles
- * (via title callbacks) for an enhanced user experience. For example: we'd
- * change "Edit" to "Edit current".
- *
- * See http://drupal.org/node/500864
- */
-function vid_to_arg($arg, &$map, $index) {
-  if (empty($arg)) {
-    //return revisioning_get_current_node_revision_id($nid = $map[1]);
-    $map = array();
-    return '';
-  }
-  return $arg;
 }
 
 /**
@@ -899,35 +762,13 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
   return REVISIONING_LOAD_CURRENT;
 }
 
-function _revisioning_prepare_msg($node) {
-  if (!$node->nid) { // new node
-    return;
-  }
-  $count = _revisioning_get_number_of_revisions_newer_than($node->vid, $node->nid);
-  if ($count == 1) {
-    drupal_set_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
-  }
-  elseif ($count > 1) {
-    drupal_set_message(t('Please note there are !count revisions more recent than the one you are about to edit.', array('!count' => check_plain($count))), 'warning');
-  }
-}
-
-function _revisioning_insert_msg($node) {
-  if ($node->status) {
-    drupal_set_message(t('Initial revision created and published.'));
-  }
-  else {
-    drupal_set_message(t('Initial draft created, pending publication.'));
-  }
-}
-
 /**
  * Display all revisions of the supplied node in a themed table with links for
  * the permitted operations above it.
  * @return render array as returned by drupal_get_form()
  */
 function _revisioning_present_node($node, $op = 'any') {
-  return ($op  == 'edit' && !$node->revision_moderation) ? node_page_edit($node) :_theme_revisions_summary($node);
+  return ($op  == 'edit' && !$node->revision_moderation) ? node_page_edit($node) : _theme_revisions_summary($node);
 }
 
 /**
@@ -938,11 +779,6 @@ function _revisioning_view($node) {
     $vid_to_load = revisioning_get_latest_revision_id($node->nid);
     $node = node_load($node->nid, $vid_to_load);
   }
-  // In node.module, node_page_view() is used to display the current, while
-  // node_show() is used for any other revision. The difference between the
-  // two is that node_page_view() surpresses the message that tells us we're
-  // viewing a revision. That's what we use here because we have our own
-  // configurable message.
   return node_page_view($node);
 }
 
@@ -959,25 +795,7 @@ function _revisioning_edit($node) {
     $vid_to_load = revisioning_get_latest_revision_id($node->nid);
     $node = node_load($node->nid, $vid_to_load);
   }
-  // Following is the same as node_page_edit().
-  drupal_set_title($node->title);
-  return drupal_get_form($node->type . '_node_form', $node);
-}
-
-/**
- * Callback for the primary View and Edit tabs.
- * @param $node
- * @param $edit, bool
- * @return string
- */
-function _revisioning_title_for_tab($node, $edit = FALSE) {
-  if ($node->num_revisions <= 1 || !$node->revision_moderation) {
-    return $edit ? t('Edit') : t('View');
-  }
-  if (_revisioning_load_op($node, $edit ? 'edit' : 'view') == REVISIONING_LOAD_LATEST) {
-    return $edit ? t('Edit latest') : t('View latest');
-  }
-  return $edit ? t('Edit current') : t('View current');
+  return node_page_edit($node);
 }
 
 /**
@@ -996,8 +814,23 @@ function _revisioning_edit_revision($node) {
     global $theme, $custom_theme;
     $custom_theme = variable_get('admin_theme', $theme);
   }
-  drupal_set_title($node->title);
-  return drupal_get_form($node->type . '_node_form', $node);
+  return node_page_edit($node);
+}
+
+/**
+ * Callback for the primary View and Edit tabs titles
+ * @param $node
+ * @param $edit, bool
+ * @return translatable title string
+ */
+function _revisioning_title_for_tab($node, $edit = FALSE) {
+  if ($node->num_revisions <= 1 || !$node->revision_moderation) {
+    return $edit ? t('Edit') : t('View');
+  }
+  if (_revisioning_load_op($node, $edit ? 'edit' : 'view') == REVISIONING_LOAD_LATEST) {
+    return $edit ? t('Edit latest') : t('View latest');
+  }
+  return $edit ? t('Edit current') : t('View current');
 }
 
 if (module_exists('diff')) {

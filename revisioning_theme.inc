@@ -268,35 +268,6 @@ function _theme_revisions_summary($node) {
   return drupal_get_form('revisioning_revisions_summary', $node->nid);
 }
 
-function _theme_block_pending_revisions($nodes) {
-  $max_num_shown = variable_get('revisioning_block_num_pending', 5);
-  $nodes_to_display = array_slice($nodes, 0, $max_num_shown);
-  $links = array();
-  foreach ($nodes_to_display as $node) {
-    $vid = revisioning_get_latest_revision_id($node->nid);
-    $links[] = l($node->title, "node/$node->nid/revisions/$vid/view");
-  }
-  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css'); // also loads /revisioning-rtl.css
-  $block = array();
-  $title_link = trim(variable_get('revisioning_content_summary_page', ''));
-  if (empty($title_link)) {
-    if (module_exists('module_grants_monitor') && user_tools_user_any_access(module_grants_monitor_perm())) {
-      $title_link = 'accessible-content';
-    }
-    elseif (module_exists('views')) {
-      $title_link = 'content-summary';
-    }
-    else {
-      $title_link = 'admin/content';
-    }
-  }
-  $block['subject'] = l(t('!num_revisions pending',
-    array('!num_revisions' => format_plural(count($nodes), '1 revision', '@count revisions'))),
-    $title_link);
-  $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
-  return $block;
-}
-
 
 /**
  * Return an array of hyperlinks representing the operations the logged-in user

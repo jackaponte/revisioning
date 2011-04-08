@@ -280,3 +280,100 @@ function _revisioning_delete_submit(&$form, &$form_state) {
   $vid = $form['#node']->vid;
   $form_state['redirect'][0] = "node/$nid/revisions/$vid/delete";
 }
+
+
+/**
+ * Implements hook_block_info().
+ *
+ * A block that may be placed on selected pages, alerting the moderator when
+ * new content has been submitted for review. Shows titles of pending revisions
+ * as a series of links. Clicking a link takes the moderator straight to the
+ * revision in question.
+ */
+function revisioning_block_info() {
+  $block['pending']['info'] = t('Pending revisions');
+  $block['pending']['cache'] = DRUPAL_NO_CACHE;
+  $block['pending']['weight'] = -10; // towards top of whatever region is chosen
+  $block['pending']['custom'] = FALSE; // block is implemented by this module;
+  return $block;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function revisioning_block_configure($delta = 'pending') {
+  $form['revisioning_block_num_pending'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum number of pending revisions displayed'),
+    '#default_value' => variable_get('revisioning_block_num_pending', 5),
+    '#description' => t('Note: the title of this block mentions the total number of revisions pending, which may be greater than the number of revisions displayed.')
+  );
+  $form['revisioning_block_order'] = array(
+    '#type' => 'radios',
+    '#title' => t('Order in which pending revisions are displayed'),
+    '#options' => array(
+      REVISIONS_BLOCK_OLDEST_AT_TOP => t('Oldest at top'),
+      REVISIONS_BLOCK_NEWEST_AT_TOP => t('Newest at top')),
+    '#default_value' => variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP),
+    '#description' => t('Note: order is based on revision timestamps.')
+  );
+  $form['revisioning_content_summary_page'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page to go to when the block title is clicked'),
+    '#default_value' => variable_get('revisioning_content_summary_page', ''),
+    '#description' => t('When left blank this will default to %accessible_content, provided Module Grants Montior is enabled and the user has sufficient permissions. Otherwise %view_content or %admin_content will be used, subject to permissions.<br>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
+      '%accessible_content' => 'accessible-content',
+      '%view_content' => 'content-summary',
+      '%admin_content' => 'admin/content'))
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function revisioning_block_save($delta = '', $edit = array()) {
+  variable_set('revisioning_block_num_pending', (int)$edit['revisioning_block_num_pending']);
+  variable_set('revisioning_block_order', (int)$edit['revisioning_block_order']);
+  variable_set('revisioning_content_summary_page', $edit['revisioning_content_summary_page']);
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function revisioning_block_view($delta = '') {
+  $order = variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP) == REVISIONS_BLOCK_OLDEST_AT_TOP ? 'ASC' : 'DESC';
+  $nodes = revisioning_get_nodes('update', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
+  if (!empty($nodes)) {
+    return _revisioning_block_pending_revisions_content($nodes);
+  }
+}
+
+function _revisioning_block_pending_revisions_content($nodes) {
+  $max_num_shown = variable_get('revisioning_block_num_pending', 5);
+  $nodes_to_display = array_slice($nodes, 0, $max_num_shown);
+  $links = array();
+  foreach ($nodes_to_display as $node) {
+    $vid = revisioning_get_latest_revision_id($node->nid);
+    $links[] = l($node->title, "node/$node->nid/revisions/$vid/view");
+  }
+  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css'); // also loads /revisioning-rtl.css
+  $block = array();
+  $title_link = trim(variable_get('revisioning_content_summary_page', ''));
+  if (empty($title_link)) {
+    if (module_exists('module_grants_monitor') && user_tools_user_any_access(module_grants_monitor_perm())) {
+      $title_link = 'accessible-content';
+    }
+    elseif (module_exists('views')) {
+      $title_link = 'content-summary';
+    }
+    else {
+      $title_link = 'admin/content';
+    }
+  }
+  $block['subject'] = l(t('!num_revisions pending',
+    array('!num_revisions' => format_plural(count($nodes), '1 revision', '@count revisions'))),
+    $title_link);
+  $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
+  return $block;
+}

@@ -27,6 +27,7 @@ function revisioning_uninstall() {
     // Remove 'revision_moderation' from all node_options_<content_type> variables
     $variable_name = 'node_options_' . $type->type;
     if ($node_options = variable_get($variable_name, NULL)) {
+      // @todo array seems to contain 'revision' rather than revision_moderation
       $node_options = array_diff($node_options, array('revision_moderation'));
       variable_set($variable_name, $node_options);
     }
