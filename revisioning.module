@@ -117,10 +117,10 @@ function revisioning_permission() {
 function revisioning_menu() {
   $items = array();
 
-  // Start with the Revisioning configuration menu item, put it under Media
-  $items['admin/config/media/revisioning'] = array(
+  // Start with the Revisioning config menu item, put under Content Authoring
+  $items['admin/config/content/revisioning'] = array(
     'title' => 'Revisioning',
-    'description' => 'Configure how links to view and edit content behave.',
+    'description' => 'Configure how content view and edit links behave. Customise revision summary listing.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('revisioning_admin_configure'),
     'access arguments' => array('administer site configuration'),
@@ -464,7 +464,7 @@ function revisioning_node_prepare($node) {
  */
 function revisioning_node_presave(&$node) {
   revisioning_set_basic_node_revision_info($node);
-  if (isset($node->revision_moderation) && $node->revision_moderation) { // Tick-box on edit form, not set upon creation
+  if (isset($node->revision_moderation) && $node->revision_moderation) {
     $node->is_pending = _revisioning_node_is_pending($node); // set by revisioning_node_load, if not new
     if ($node->revision && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
       revisioning_set_status_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
@@ -489,11 +489,13 @@ function revisioning_node_presave(&$node) {
  * New node.
  */
 function revisioning_node_insert($node) {
-  if ($node->status) {
-    revisioning_set_status_message(t('Initial revision created and published.'));
-  }
-  else {
-    revisioning_set_status_message(t('Initial draft created, pending publication.'));
+  // Can't check for $node->revision_moderation, as this set via 
+  // hook_node_load(), which isn't called for an insert.
+  if (revisioning_content_is_moderated($node->type)) {
+    revisioning_set_status_message($node->status
+      ? t('Initial revision created and published.')
+      : t('Initial draft created, pending publication.')
+    );
   }
 }
 
@@ -748,6 +750,18 @@ function _revisioning_view_edit_access_callback($op, $node) {
   return _revisioning_access_node_revision($revision_op, $node);
 }
 
+/**
+ * Assuming that the node passed in is the current revision (core default),
+ * this function determines whether the lastest revision should be loaded
+ * instead, in which case it returns REVISIONING_LOAD_LATEST.
+ *
+ * @param $node, only nodes of content types subject to moderation are 
+ *   processed by this function
+ * @param $op, either 'edit' or 'view'
+ * @param $check_access, whether revision access permissions should be
+ *   checked; if the user has no permission to load the latest revisions, then
+ *   the function returns REVISIONING_LOAD_CURRENT
+ */
 function _revisioning_load_op($node, $op, $check_access = TRUE) {
   if ($node->revision_moderation) {
     $view_mode = (int)variable_get('revisioning_view_callback', REVISIONING_LOAD_CURRENT);
@@ -790,16 +804,19 @@ function revisioning_node_overview($node) {
     return _theme_revisions_summary($node);
   }
   if (module_exists("diff")) {
-    require_once drupal_get_path('module', 'diff') . '/diff.pages.inc';
+    module_load_include('inc', 'diff', 'diff.pages');
     return diff_diffs_overview($node);
   }
-  require_once drupal_get_path('module', 'node') . '/node.pages.inc';
+  module_load_include('inc', 'node', 'node.pages');
   return node_revision_overview($node);
 */
 }
 
 /**
  * Menu callback for the primary View tab.
+ * 
+ * This is the same callback as used in core, except that in core current and
+ * latest revisions are always the same.
  */
 function _revisioning_view($node) {
   if (_revisioning_load_op($node, 'view') == REVISIONING_LOAD_LATEST) {
@@ -813,15 +830,11 @@ function _revisioning_view($node) {
  * Callback for the primary Edit tab.
  */
 function _revisioning_edit($node) {
-  // Use the admin theme if the user specified this for node edit pages
-  if (variable_get('node_admin_theme', FALSE)) {
-    global $theme, $custom_theme;
-    $custom_theme = variable_get('admin_theme', $theme);
-  }
   if (_revisioning_load_op($node, 'edit') == REVISIONING_LOAD_LATEST) {
     $vid_to_load = revisioning_get_latest_revision_id($node->nid);
     $node = node_load($node->nid, $vid_to_load);
   }
+  _revisioning_set_custom_theme_if_necessary();
   return node_page_edit($node);
 }
 
@@ -829,18 +842,17 @@ function _revisioning_edit($node) {
  * Callback to view a particular revision.
  */
 function _revisioning_view_revision($node) {
-  return node_page_view($node);
+  // This is the callback used by node.module for node/%node/revisions/%/view
+  return node_show($node, TRUE);
 }
 
 /**
  * Callback to edit a particular revision.
+ * 
+ * Note that there is no equivalent of this in core.
  */
 function _revisioning_edit_revision($node) {
-  // Use the admin theme if the user specified this for node edit pages
-  if (variable_get('node_admin_theme', FALSE)) {
-    global $theme, $custom_theme;
-    $custom_theme = variable_get('admin_theme', $theme);
-  }
+  _revisioning_set_custom_theme_if_necessary();
   return node_page_edit($node);
 }
 
@@ -858,6 +870,15 @@ function _revisioning_title_for_tab($node, $edit = FALSE) {
     return $edit ? t('Edit latest') : t('View latest');
   }
   return $edit ? t('Edit current') : t('View current');
+}
+
+function _revisioning_set_custom_theme_if_necessary() {
+  // Use the admin theme if the user specified this at Appearance >> Settings.
+  // Note: first tick 'View the administration theme' at People >> Permissions.
+  if (variable_get('node_admin_theme', FALSE)) {
+    global $theme, $custom_theme;
+    $custom_theme = variable_get('admin_theme', $theme);
+  }
 }
 
 if (module_exists('diff')) {
