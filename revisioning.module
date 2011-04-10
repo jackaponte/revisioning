@@ -68,30 +68,42 @@ function revisioning_permission() {
       'description' => ''))
     : array();
 
+  $moderated_content_types = implode(', ', revisioning_moderated_content_types(FALSE));
+  $publish_description = empty($moderated_content_types)
+    ? t('Please select one or more content types for moderation by ticking the <em>New revision in draft, pending moderation</em> <strong>Publishing option</strong> at <em>Structure >> Content types >> edit</em>.')
+    : t('Applies only to content types that are subject to moderation, i.e.: %moderated_content_types.',
+        array('%moderated_content_types' => $moderated_content_types));
+
   $permissions = array_merge($permissions, array(
     'view revision status messages' => array(
       'title' => t('View revision status messages'),
-      'description' => ''),
+      'description' => ''
+    ),
     'edit revisions' => array(
       'title' => t('Edit content revisions'),
-      'description' => ''),
+      'description' => t('Also requires edit permission from either the Node or other content access module(s).')
+    ),
     'publish revisions' => array(
       'title' => t('Publish content revisions'),
-      'description' => ''),
+      'description' => $publish_description
+    ),
     'unpublish current revision' => array(
       'title' => t('Unpublish current revision'),
-       'description' => '')
+      'description' => $publish_description
+    )
   ));
-  // Add per node-type view perms in same way as edit perms of node module.
-  // @todo only do this for content types that have the "Create new revision" ticked
+  // Add per node-type view permissions in same way as edit permissions of node
+  // module, but only for moderated content-types.
   foreach (node_type_get_types() as $type) {
     $machine_name = check_plain($type->type);
-    $permissions['view revisions of own ' . $machine_name . ' content'] = array(
-      'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)),
-      'description' => 'Applies to both published and unpublished content.');
-    $permissions['view revisions of any ' . $machine_name . ' content'] = array(
-      'title' => t('%type-name: View revisions of any content', array('%type-name' => $type->name)),
-      'description' => 'Applies to both published and unpublished content.');
+    if (revisioning_content_is_moderated($machine_name)) {
+      $permissions['view revisions of own ' . $machine_name . ' content'] = array(
+        'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)),
+        'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+      $permissions['view revisions of any ' . $machine_name . ' content'] = array(
+        'title' => t('%type-name: View revisions of any content', array('%type-name' => $type->name)),
+        'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+    }
   }
   return $permissions;
 }
@@ -161,7 +173,7 @@ function revisioning_menu() {
     'title' => 'Revisions',
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('view revision list', 1),
-    'page callback' => '_revisioning_present_node',
+    'page callback' => 'revisioning_node_overview',
     'page arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 2
@@ -258,7 +270,6 @@ function revisioning_menu() {
   //'tab_parent' => 'node/%/revisions',
   );
   // Delete revision local subtask.
-  // Difference from core version is %vid that's served by vid_to_arg() function.
   $items['node/%nid/revisions/%vid/delete'] = array(
     'title' => 'Delete',
     'load arguments' => array(3),
@@ -273,7 +284,7 @@ function revisioning_menu() {
   //'tab_parent' => 'node/%/revisions',
   );
 
-  // If Diff module is enabled, provide a compare local subtask
+  // If Diff module is enabled, provide a "Compare to current" local subtask
   if (module_exists('diff')) {
     $items['node/%nid/revisions/%vid/compare'] = array(
       'title' => 'Compare to current',
@@ -422,6 +433,13 @@ function revisioning_node_load($nodes, $types) {
   }
 }
 
+
+function revisioning_set_status_message($message) {
+  if (user_access('view revision status messages')) {
+    drupal_set_message($message, 'status');
+  }
+}
+
 /**
  * Implements hook_node_prepare().
  *
@@ -431,10 +449,10 @@ function revisioning_node_prepare($node) {
   if (!empty($node->nid)) {
     $count = _revisioning_get_number_of_revisions_newer_than($node->vid, $node->nid);
     if ($count == 1) {
-      drupal_set_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
+      revisioning_set_status_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
     }
     elseif ($count > 1) {
-      drupal_set_message(t('Please note there are !count revisions more recent than the one you are about to edit.', array('!count' => check_plain($count))), 'warning');
+      revisioning_set_status_message(t('Please note there are !count revisions more recent than the one you are about to edit.', array('!count' => check_plain($count))), 'warning');
     }
   }
 }
@@ -449,7 +467,7 @@ function revisioning_node_presave(&$node) {
   if (isset($node->revision_moderation) && $node->revision_moderation) { // Tick-box on edit form, not set upon creation
     $node->is_pending = _revisioning_node_is_pending($node); // set by revisioning_node_load, if not new
     if ($node->revision && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
-      drupal_set_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
+      revisioning_set_status_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
       // Update the $node object just before it is saved to the db
       $node->revision = FALSE;
     }
@@ -457,7 +475,7 @@ function revisioning_node_presave(&$node) {
     $result = db_query("SELECT title FROM {node} n WHERE n.nid = :nid", array(':nid' => $node->nid));
     $node->current_title = $result->fetchField();
     if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
-      drupal_set_message(t('Auto-publishing this revision.'));
+      revisioning_set_status_message(t('Auto-publishing this revision.'));
       $node->status = TRUE;
       // Make sure the 'update' does NOT reset vid, so that new revision becomes current
       unset($node->current_revision_id);
@@ -472,10 +490,10 @@ function revisioning_node_presave(&$node) {
  */
 function revisioning_node_insert($node) {
   if ($node->status) {
-    drupal_set_message(t('Initial revision created and published.'));
+    revisioning_set_status_message(t('Initial revision created and published.'));
   }
   else {
-    drupal_set_message(t('Initial draft created, pending publication.'));
+    revisioning_set_status_message(t('Initial draft created, pending publication.'));
   }
 }
 
@@ -645,7 +663,7 @@ function _revisioning_operation_appropriate($revision_op, $node) {
 function _revisioning_access_node_revision($revision_op, $node) {
 
   if (!isset($node->num_revisions) || !isset($node->is_current)) {
-    drupal_set_message(t('Node object data incomplete'), 'warning', FALSE);
+    drupal_set_message(t('Node object data incomplete'), 'error', FALSE);
   }
   if (!_revisioning_operation_appropriate($revision_op, $node)) {
     return FALSE;
@@ -654,9 +672,11 @@ function _revisioning_access_node_revision($revision_op, $node) {
     $access = module_grants_node_revision_access($revision_op, $node);
   }
   else {
+    // Check the revision-aspect of the operation
     $node_op = revisioning_user_node_access($revision_op, $node);
-    // Fall back to core to assess permissions (even though they suck)
-    $access = $node_op && node_access($node_op, $node); // this will invoke hook_node_access()
+    // ... then check with core to assess node permissions
+    // node_access will invoke hook_node_access(), i.e. revisioning_node_access().
+    $access = $node_op && node_access($node_op, $node);
   }
   return $access;
 }
@@ -667,21 +687,17 @@ function _revisioning_access_node_revision($revision_op, $node) {
  * This gets invoked from node.module/node_access() after it has checked the
  * standard node permissions using node_node_access() and just before it checks
  * the node_access grants table. 
- * We basically return "don't care" except for one View case, which replicates
- * the node.module ("don't care" in this case would result in "access denied").
+ * We basically return "don't care" except for one 'view. case, which replicates
+ * the node.module. "Don't care" in this case would result in "access denied".
  */
 function revisioning_node_access($node, $node_op, $account) {
   // Taken from node.module/node_access():
   // If no modules implement hook_node_grants(), the default behaviour is to
-  // allow all users to view published nodes, so reflect that here.
-  if ($node_op == 'view' && ($node->status || revisioning_user_node_access('view revisions', $node))) {
-    $enabled_access_modules = array();
-    foreach (module_implements('node_grants') as $module) {
-      $enabled_access_modules[] = $module;
-    }
-    if (empty($enabled_access_modules)) {
-      return NODE_ACCESS_ALLOW;
-    }
+  // allow all users to view published nodes, so reflect that here,
+  // augmented for the 'view revisions' family of permissions, which apply to
+  // both published and unpublished nodes.
+  if ($node_op == 'view' && !module_implements('node_grants') &&  ($node->status || revisioning_user_node_access('view revisions', $node))) {
+    return NODE_ACCESS_ALLOW;
   }
   return NODE_ACCESS_IGNORE;
 }
@@ -767,8 +783,19 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
  * the permitted operations above it.
  * @return render array as returned by drupal_get_form()
  */
-function _revisioning_present_node($node, $op = 'any') {
-  return ($op  == 'edit' && !$node->revision_moderation) ? node_page_edit($node) : _theme_revisions_summary($node);
+function revisioning_node_overview($node) {
+  return _theme_revisions_summary($node);
+/* Code below works but results in three different looks, prefer consistency
+  if ($node->revision_moderation) {
+    return _theme_revisions_summary($node);
+  }
+  if (module_exists("diff")) {
+    require_once drupal_get_path('module', 'diff') . '/diff.pages.inc';
+    return diff_diffs_overview($node);
+  }
+  require_once drupal_get_path('module', 'node') . '/node.pages.inc';
+  return node_revision_overview($node);
+*/
 }
 
 /**
@@ -841,7 +868,7 @@ if (module_exists('diff')) {
   function _revisioning_compare_to_current_revision($node) {
     module_load_include('inc', 'diff', 'diff.pages'); // for diff_diffs_show()
     // Make sure that latest of the two revisions is on the right
-    if ($node->is_pending) {
+    if ($node->current_revision_id > $node->vid) {
       return diff_diffs_show($node, $node->current_revision_id, $node->vid);
     }
     return diff_diffs_show($node, $node->vid, $node->current_revision_id);

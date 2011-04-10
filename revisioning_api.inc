@@ -108,10 +108,10 @@ function revisioning_revision_is_current($node) {
  * Return whether the supplied content type is subject to moderation.
  *
  * @param $content_type
- *  i.e. $node->type
+ *  i.e. machine name, ie. $node->type
  * @return
  *  TRUE, if the supplied type has the "New revision in draft, pending
- *  moderation" box ticked on the Content management>>Content types>>edit page
+ *  moderation" box ticked on the Structure>>Content types>>edit page
  *  (see Revisioning).
  */
 function revisioning_content_is_moderated($content_type) {
@@ -581,12 +581,12 @@ function revisioning_user_access_all($permissions, $account = NULL) {
  *
  * @return array of strings, may be empty
  */
-function revisioning_moderated_content_types() {
+function revisioning_moderated_content_types($machine_name = TRUE) {
   $moderated_content_types = array();
   foreach (node_type_get_types() as $type) {
     $content_type = check_plain($type->type);
     if (revisioning_content_is_moderated($content_type)) {
-      $moderated_content_types[] = $content_type;
+      $moderated_content_types[] = ($machine_name ? $content_type : $type->name);
     }
   }
   return $moderated_content_types;
@@ -633,7 +633,6 @@ define('NO_FILTER', '-1');
  */
 function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modifier_uid = -1,
   $is_moderated = -1, $is_pending = FALSE, $max = 1000, $order_by_override = NULL) {
-//drupal_set_message("op='$op', is_published='$is_published', creator=$creator_uid, modifier=$modifier_uid, is_moderated='$is_moderated', is_pending='$is_pending', max=$max, show_msg='$show_message', order=$order_by_override", 'warning');
   $sql_select = 'SELECT n.nid, r.vid, n.uid AS creator_uid, r.uid, n.type, n.status, r.title, r.timestamp';
   // Join on current revision (vid) except when looking for pending revisions
   $sql_from   = ' FROM {node} n INNER JOIN {node_revision} r ' . ($is_pending ? 'ON n.nid=r.nid' : 'ON n.vid=r.vid');
@@ -661,7 +660,6 @@ function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modi
     $sql_from .= ' LEFT JOIN {workflow_node} wn ON wn.nid=n.nid LEFT JOIN {workflow_states} ws ON wn.sid=ws.sid';
   }
   $sql = $sql_select . $sql_from . $sql_where . $sql_order;
-//drupal_set_message($sql);
   $node_query_result = db_query_range($sql, 0, $max);
   $nodes = array();
   foreach ($node_query_result as $node) {

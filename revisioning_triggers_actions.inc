@@ -165,9 +165,9 @@ function revisioning_publish_latest_revision_action(&$entity, $context = array()
     'Executing publish_latest_revision action for @type %title', array('@type' => $type->name, '%title' => $node->title),
     WATCHDOG_NOTICE, l(t('view'), "node/$node->nid"));
   if (_revisioning_publish_latest_revision($node)) {
-    drupal_set_message(t('Revision has been published.'));
+    revisioning_set_status_message(t('Revision has been published.'));
   }
   else {
-    drupal_set_message(t('"!title" has no pending revision to be published.', array('!title' => check_plain($node->title))), 'warning');
+    revisioning_set_status_message(t('"!title" has no pending revision to be published.', array('!title' => check_plain($node->title))), 'warning');
   }
 }

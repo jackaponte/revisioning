@@ -12,3 +12,4 @@ files[] = views/revisioning_handler_filter_node_revision_moderation.inc
 files[] = views/revisioning_handler_filter_node_state.inc
 files[] = views/revisioning_handler_filter_revision_state.inc
 
+version = "7.x-1.0-beta4"

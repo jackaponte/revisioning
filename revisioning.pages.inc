@@ -117,7 +117,7 @@ function revisioning_publish_confirm_submit($form, &$form_state) {
   $nid = $form_state['values']['node_id'];
   $vid = $form_state['values']['revision'];
   _revisioning_publish_revision($nid, $vid);
-  drupal_set_message(t('Revision has been published.'));
+  revisioning_set_status_message(t('Revision has been published.'));
   // Redirect to the same page as unpublish and revert
   $form_state['redirect'] = "node/$nid/revisions";
 }
@@ -144,7 +144,7 @@ function revisioning_unpublish_confirm_submit($form, &$form_state) {
   _revisioning_unpublish_revision($nid);
 //$type = $form_state['values']['type']; // machine name, eg. 'page' rather than 'Basic page'
   $title = $form_state['values']['title'];
-  drupal_set_message(t('%title is no longer publicly visible.', array('%title' => $title)));
+  revisioning_set_status_message(t('%title is no longer publicly visible.', array('%title' => $title)));
   // Redirect to the same page as publish and revert
   $form_state['redirect'] = "node/$nid/revisions";
 }

@@ -77,7 +77,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
     }
   } // foreach
 
-  drupal_set_message(format_plural(count($revisions),
+  revisioning_set_status_message(format_plural(count($revisions),
     '%title is @publication_status. It has only one revision',
     '%title is @publication_status. It has @count revisions.',
     array(
@@ -132,7 +132,7 @@ function revisioning_revisions_summary_submit($form, &$form_state) {
   next($selected_vids);
   $vid2 = key($selected_vids);
   drupal_get_messages(); // clear existing msgs
-  drupal_set_message(t('Comparing revision #!revision2 against revision #!revision1',
+  revisioning_set_status_message(t('Comparing revision #!revision2 against revision #!revision1',
     array('!revision2' => $vid2, '!revision1' => $vid1)));
   $nid = $form_state['values']['nid'];
   $form_state['redirect'] = "node/$nid/revisions/view/$vid2/$vid1";
@@ -282,11 +282,13 @@ function _theme_revisions_summary($node) {
 function _revisioning_generate_node_links_according_to_permissions($node, $link_type = 0) {
   $nid = $node->nid;
   $themed_links = array();
-  if (_revisioning_access_node_revision('publish revisions', $node)) {
-    $themed_links[] = l(t('Publish'), "node/$nid/revisions/$node->vid/publish");
-  }
-  elseif (_revisioning_access_node_revision('unpublish current revision', $node)) {
-    $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish");
+  if ($node->revision_moderation) {
+    if (_revisioning_access_node_revision('publish revisions', $node)) {
+      $themed_links[] = l(t('Publish'), "node/$nid/revisions/$node->vid/publish");
+    }
+    elseif (_revisioning_access_node_revision('unpublish current revision', $node)) {
+      $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish");
+    }
   }
   if (_revisioning_access_node_revision('delete node', $node)) {
     $text = // avoiding format_plural [#557050]
