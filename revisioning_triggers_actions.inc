@@ -94,7 +94,7 @@ function revisioning_action_revision_trigger($revision, $hook) {
     'node_type' => node_type_get_type($revision),
     'revision' => $revision,
     'path' => NULL,
-    'term' => NULL, // taxonomy_term_load($revision->tnid),
+    'term' => NULL, // taxonomy_term_load(?),
     'user' => $user,
     'vocabulary' => NULL
   );
@@ -118,7 +118,7 @@ function revisioning_action_revision_trigger($revision, $hook) {
         case 'user':
           $objects[$type] = user_load($revision->uid);
           break;
-        case 'comment': // can't do
+        case 'comment': // not sure how
           break;
         default:
       }
@@ -168,6 +168,6 @@ function revisioning_publish_latest_revision_action(&$entity, $context = array()
     revisioning_set_status_message(t('Revision has been published.'));
   }
   else {
-    revisioning_set_status_message(t('"!title" has no pending revision to be published.', array('!title' => check_plain($node->title))), 'warning');
+    drupal_set_message(t('"!title" has no pending revision to be published.', array('!title' => check_plain($node->title))), 'warning');
   }
 }
