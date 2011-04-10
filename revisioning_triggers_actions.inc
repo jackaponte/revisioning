@@ -143,7 +143,8 @@ function revisioning_action_info() {
    // the same name as the action function with '_form' appended
       'configurable' => FALSE,
    // 'behavior' => array('changes_property'),
-      'triggers' => array('node_presave')
+   // Unlike 'node_publish_action', this is NOT a 'node_presave' action:
+      'triggers' => array('node_insert', 'node_update')
     )
   );
   return $action_info;

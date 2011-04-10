@@ -116,7 +116,7 @@ function revisioning_publish_confirm($form, &$form_state, $node) {
 function revisioning_publish_confirm_submit($form, &$form_state) {
   $nid = $form_state['values']['node_id'];
   $vid = $form_state['values']['revision'];
-  _revisioning_publish_revision($nid, $vid);
+  _revisioning_publish_revision(node_load($nid, $vid));
   revisioning_set_status_message(t('Revision has been published.'));
   // Redirect to the same page as unpublish and revert
   $form_state['redirect'] = "node/$nid/revisions";

@@ -210,7 +210,7 @@ function theme_revisioning_revisions_summary($variables) {
     }
     // Apply CSS class
     $row_style = $is_current ? array('revision-current') : ($is_pending ? array('revision-pending') : array());
-    if ($is_current && $node->status) {
+    if ($is_current && $node->status == NODE_PUBLISHED) {
       $row_style[] = 'published';
     }
     $rows[] = array('data' => $row, 'class' => $row_style);

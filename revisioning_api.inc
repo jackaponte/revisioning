@@ -125,10 +125,9 @@ function revisioning_content_is_moderated($content_type) {
  * @param $state
  *  optional state id, as defined in revisioning_api.inc
  * @return
- *  if $state is provided, state name. Otherwise, state names array keyed by state id.
+ *  if $state is provided, state name. Otherwise, an array keyed by state id.
  */
 function revisioning_revision_states($state = NULL) {
-  static $states;
   $states = array(
     REVISION_ARCHIVED => t('Archived'),
     REVISION_CURRENT  => t('Current, published'),
@@ -278,12 +277,13 @@ function _revisioning_revert_revision(&$node, $vid = NULL) {
  *
  * @param $node
  *  Target $node object or nid of target node
- */
+ *
 function _revisioning_publish_node($nid_or_node) {
   $node = is_object($nid_or_node) ? $nid_or_node : node_load($nid_or_node);
   db_query("UPDATE {node} SET status = 1 WHERE nid = :nid", array(
     ':nid' => $node->nid)
   );
+/*
   db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
     ':vid' => $node->vid)
   );
@@ -292,8 +292,9 @@ function _revisioning_publish_node($nid_or_node) {
     ':nid' => $node->nid,
     ':vid' => $node->vid)
   );
-  cache_clear_all();
+  cache_clear_all(); // required?
 }
+*/
 
 /**
  * Unpublish node, without calling node_save().
@@ -306,11 +307,12 @@ function _revisioning_unpublish_node($nid_or_node) {
   db_query("UPDATE {node} SET status = 0 WHERE nid = :nid", array(
     ':nid' => $nid)
   );
-  // Database integrity: make sure that no node revisions have their published flag set
+  // Database integrity: make sure that no revisions belonging to this node
+  // have their published flag set.
   db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid", array(
     ':nid' => $nid)
   );
-  cache_clear_all();
+  cache_clear_all(); // requried?
 }
 
 /**
@@ -351,7 +353,7 @@ function _revisioning_delete_revision(&$node, $vid = NULL) {
  * @param $node
  *  Target $node object or nid of target node
  *
- * @TODO: Shouldn't we invoke hook_nodeapi('update'..) too, since we are updating node?
+ * @TODO: Shouldn't we invoke hook_node_update() too, since we are updating node?
  */
 function _revisioning_unpublish_revision(&$node) {
   $node_revision = is_object($node) ? $node : node_load($node);
@@ -363,42 +365,47 @@ function _revisioning_unpublish_revision(&$node) {
 
 /**
  * Make the supplied revision of the node current and publish it.
- * It is the caller's responsibility to provide a proper revision.
+ * It is the caller's responsibility to provide a proper revision or nid + vid.
  * Note that no check is made as to whether the initiating user has permission
  * to publish this revision.
  *
  * @param $node
- *  Target $node object (loaded with target revision) or nid of target node
+ *  Target $node object (loaded with target revision)
  * @param $vid
  *  optional vid of revision to make current, if provided $node is not object.
  */
-function _revisioning_publish_revision(&$node, $vid = NULL) {
-  $node_revision = is_object($node) ? $node : node_load($node, $vid);
+function _revisioning_publish_revision(&$node_revision) {
   module_invoke_all('revisionapi', 'pre publish', $node_revision);
   // Update node table, making sure the "published" (ie. status) flag is set
-  db_query("UPDATE {node} SET vid = :vid, title = :title, status = 1 WHERE nid = :nid", array(
+  // These queries don't seem to do anything, when called from node_save() on presave.
+  // Maybe should just set values on $node object ?
+  $ret = db_query("UPDATE {node} SET vid = :vid, title = :title, status = 1 WHERE nid = :nid", array(
     ':vid' => $node_revision->vid,
     ':title' => $node_revision->title,
     ':nid' => $node_revision->nid)
   );
-  db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
+  $ret = db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
     ':vid' => $node_revision->vid)
   );
+/*
   // Database integrity: make sure that no other node revision has its published flag set
-  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
+  $ret = db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
     ':nid' => $node_revision->nid,
     ':vid' => $node_revision->vid)
   );
-  cache_clear_all();
+*/
+  cache_clear_all(); // ? required ?
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);
 }
 
 /**
  * Find the most recent pending revision, make it current, unless it already is
- * and publish node.
+ * and publish it and its node.
  * Note that no check is made as to whether the initiating user has permission
  * to publish this node.
+ * Note that this is a post-save operation that should not be called in 
+ * response to hook_node_presave(), as invoked from node_save().
  *
  * @param $node
  *   The node object whose latest pending revision is to be published
@@ -410,13 +417,15 @@ function _revisioning_publish_latest_revision(&$node) {
   // Get the latest pending revision
   $pending_revisions = _revisioning_get_pending_revisions($node->nid);
   $latest_pending = array_shift($pending_revisions);
-  // If there is no pending revision, take the current revision, provided it's UNpublished
+  // If there is no pending revision, take the current revision, provided it is
+  // NOT published
   if (!$latest_pending && $node->is_current && !$node->status) {
     _revisioning_publish_revision($node);
     return TRUE;
   }
   if ($latest_pending) {
-    _revisioning_publish_revision($node->nid, $latest_pending->vid);
+    $node_revision = node_load($node->nid, $latest_pending->vid);
+    _revisioning_publish_revision($node_revision);
     return TRUE;
   }
   return FALSE;
@@ -525,7 +534,7 @@ function _revisioning_revision_is(&$node) {
   if ($node->is_pending) {
     return REVISION_PENDING;
   }
-  return ($node->is_current && $node->status) ? REVISION_CURRENT : REVISION_ARCHIVED;
+  return ($node->is_current && $node->status == NODE_PUBLISHED) ? REVISION_CURRENT : REVISION_ARCHIVED;
 }
 
 /**
