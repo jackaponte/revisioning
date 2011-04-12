@@ -245,7 +245,11 @@ function revisioning_get_latest_revision_id($nid) {
  */
 function _revisioning_revertpublish_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
-  module_invoke_all('revisionapi', 'pre revert', $node_revision);
+  $return = module_invoke_all('revisionapi', 'pre revert', $node_revision);
+  if (in_array(FALSE, $return)) {
+    drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
+    die;
+  }
   _revisioning_revert_revision($node_revision);
   module_invoke_all('revisionapi', 'post revert', $node_revision);
 }
@@ -375,16 +379,20 @@ function _revisioning_unpublish_revision(&$node) {
  *  optional vid of revision to make current, if provided $node is not object.
  */
 function _revisioning_publish_revision(&$node_revision) {
-  module_invoke_all('revisionapi', 'pre publish', $node_revision);
+
+  $return = module_invoke_all('revisionapi', 'pre publish', $node_revision);
+  if(in_array(FALSE, $return)){
+    drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
+    die;
+  }
   // Update node table, making sure the "published" (ie. status) flag is set
-  // These queries don't seem to do anything, when called from node_save() on presave.
-  // Maybe should just set values on $node object ?
-  $ret = db_query("UPDATE {node} SET vid = :vid, title = :title, status = 1 WHERE nid = :nid", array(
+  // These queries don't do anything, when called from node_save() on presave.
+  db_query("UPDATE {node} SET vid = :vid, title = :title, status = 1 WHERE nid = :nid", array(
     ':vid' => $node_revision->vid,
     ':title' => $node_revision->title,
     ':nid' => $node_revision->nid)
   );
-  $ret = db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
+  db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
     ':vid' => $node_revision->vid)
   );
 /*

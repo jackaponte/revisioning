@@ -192,7 +192,11 @@ function revisioning_revision_delete_confirm_pre_submit($form, &$form_state) {
  */
 function revisioning_revert_confirm_pre_submit($form, &$form_state) {
   $node = $form['#node_revision'];
-  module_invoke_all('revisionapi', 'pre revert', $node);
+  $return = module_invoke_all('revisionapi', 'pre revert', $node);
+   if (in_array(FALSE, $return)) {
+     drupal_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
+     die;
+  }
 }
 
 /**

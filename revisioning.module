@@ -354,6 +354,29 @@ function revisioning_menu() {
 }
 
 /**
+ * Implements MODULE_preprocess_HOOK().
+ *
+ * Shouldn't have to, but this turned out to be necessary as a result of using
+ * the nid_load() load function.
+ * This code copies what template_preprocess_node() does in its call to
+ * node_is_page(), but adapted for the nid_load() function that Revisioning
+ * employs instead of node_load().
+ *
+ * @param $variables, array of template variables
+ */
+function revisioning_preprocess_node(&$variables) {
+  if (!$variables['page'] && $variables['view_mode'] == 'full') {
+    $page_node = menu_get_object('nid'); // nid_load() vs node_load()
+    $variables['page'] = !empty($page_node) && ($page_node->nid == $variables['nid']);
+    if (!$variables['page']) { // fall back to default
+      $page_node = menu_get_object();
+      $variables['page'] = !empty($page_node) && ($page_node->nid == $variables['nid']);
+    }
+  }
+}
+
+
+/**
  * Implements hook_menu_alter().
  *
  * Modify menu items defined in other modules (in particular the Node and
@@ -513,8 +536,8 @@ function revisioning_node_insert($node) {
  * Implements hook_node_update().
  */
 function revisioning_node_update(&$node) {
-  if ($node->revision_moderation && isset($node->current_revision_id)
-      && $node->current_revision_id != $node->vid) {
+  if ($node->revision && $node->revision_moderation &&
+     isset($node->current_revision_id) && $node->current_revision_id != $node->vid) {
     // Resetting title and vid back to their originial values, thus creating pending revision.
     // Note1: cannot use old_vid as set by node_save(), as this refers to revision edited.
     // Note2: {node_revision.status} seems to sort itself out!
