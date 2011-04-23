@@ -366,10 +366,10 @@ function revisioning_menu_alter(&$items) {
 /**
  * Node load_function called for all 'node/%nid/...' menu items defined above.
  * The default node_load() function from the node.module would have been fine,
- * if it wasn't for bug [#1220272].
+ * if it wasn't for bug [#1120272].
  * node_load() first loads the {node} table data, then attaches to it the 
  * {node_revision} data. If $vid is empty, we need to specify one, or the object
- * returned may be inconsistent [#1220272]. We choose the current vid, as the
+ * returned may be inconsistent [#1120272]. We choose the current vid, as the
  * user may not have permission to 'view revisions'. We don't know the details
  * until the {node} part (e.g. node type) is loaded. So we do this and let
  * the access callback _revisioning_view_edit_access_callback() assess further
@@ -421,7 +421,7 @@ function revisioning_node_load($nodes, $types) {
   revisioning_set_basic_node_revision_info($node);
   if (!empty($node->revision_moderation) && !empty($node->is_current)) {
     // Hack!
-    // Because of core bug [#1220272], if the current revision is loaded,
+    // Because of core bug [#1120272], if the current revision is loaded,
     // $node body and fields may in fact be that of the LATEST revision.
     // So reload with FIELD_LOAD_REVISION ($node->vid is already set correctly).
     // Make sure to unset the already loaded fields or we end up with two
