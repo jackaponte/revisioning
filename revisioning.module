@@ -424,8 +424,8 @@ function revisioning_node_load($nodes, $types) {
     // Because of core bug [#1220272], if the current revision is loaded,
     // $node body and fields may in fact be that of the LATEST revision.
     // So reload with FIELD_LOAD_REVISION ($node->vid is already set correctly).
-    // Make sure to delete the already loaded fields or we end up with two
-    // copies of each field, e.g. tags, images etc.
+    // Make sure to unset the already loaded fields or we end up with two
+    // copies of each field, e.g. 2 tags, 2 image attachments etc.
     list($id, $vid, $bundle) = entity_extract_ids('node', $node);
     $options = array('deleted' => FALSE);
     $instances = _field_invoke_get_instances('node', $bundle, $options);
@@ -510,17 +510,15 @@ function revisioning_node_update($node) {
     return;
   }
   if (empty($node->revision)) { // update only, no new revision is to be created
-    // function _node_save_revision($node) copies the node status to the updated
-    // revision; need to correct
+    // function _node_save_revision($node) sets the $node->vid to the latest
+    // revision -- need to undo.
     db_query("UPDATE {node} SET vid = :vid WHERE nid = :nid", array(
        ':vid' => $node->current_revision_id,
        ':nid' => $node->nid));
-    db_query("UPDATE {node_revision} SET status = 0 WHERE vid = :vid", array(
-       ':vid' => $node->vid));
   }
   elseif (!empty($node->current_revision_id) && $node->current_revision_id != $node->vid) {
     // Resetting title and vid back to their originial values, thus creating pending revision.
-    // Note1: cannot use old_vid as set by node_save(), as this refers to revision edited.
+    // Note: cannot use old_vid as set by node_save(), as this refers to revision edited.
     db_query("UPDATE {node} SET vid = :vid, title = :title WHERE nid = :nid", array(
        ':vid' => $node->current_revision_id,
        ':title' => $node->current_title,
