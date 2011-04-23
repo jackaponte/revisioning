@@ -282,7 +282,7 @@ function _theme_revisions_summary($node) {
 function _revisioning_generate_node_links_according_to_permissions($node, $link_type = 0) {
   $nid = $node->nid;
   $themed_links = array();
-  if ($node->revision_moderation) {
+  if (!empty($node->revision_moderation)) {
     if (_revisioning_access_node_revision('publish revisions', $node)) {
       $themed_links[] = l(t('Publish'), "node/$nid/revisions/$node->vid/publish");
     }
@@ -292,7 +292,7 @@ function _revisioning_generate_node_links_according_to_permissions($node, $link_
   }
   if (_revisioning_access_node_revision('delete node', $node)) {
     $text = // avoiding format_plural [#557050]
-      ($node->num_revisions == 1)
+      (empty($node->revision_moderation) || $node->num_revisions == 1)
       ? t('Delete')
       : ($node->num_revisions == 2 ? t('Delete both revisions') : t('Delete all @count revisions', array('@count' => $node->num_revisions)));
     $themed_links[] = l($text, "node/$nid/delete");

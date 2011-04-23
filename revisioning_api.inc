@@ -35,10 +35,18 @@ define('REVISION_PENDING', 2);
  * Called from revisioning_nodeapi();
  */
 function revisioning_set_basic_node_revision_info(&$node) {
-  if (!isset($node->current_revision_id)) {
+  if (!isset($node->num_revisions)) {
+    // We need this info even for content that is not moderated.
+    // Luckily this info does not take long to compile.
+    $node->num_revisions = revisioning_get_number_of_revisions($node->nid);
     $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
     $node->is_current = revisioning_revision_is_current($node);
-    $node->num_revisions = revisioning_get_number_of_revisions($node->nid);
+    $node->is_pending = _revisioning_node_is_pending($node);
+  }
+  // The revision_moderation flag may be overridden on the node edit form by
+  // users with the "administer nodes" permission
+  if (!isset($node->revision_moderation)) {
+    $node->revision_moderation = revisioning_content_is_moderated($node->type);
   }
   //$node->uid and $node->revision_uid were already set in node_load()
   //$node->revision is set as part of 'prepare'-op, see node_object_prepare()
