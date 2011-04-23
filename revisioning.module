@@ -328,16 +328,13 @@ function revisioning_menu_alter(&$items) {
   $items['node/%node/view']['title callback'] = '_revisioning_title_for_tab';
   $items['node/%node/view']['title arguments'] = array(1, FALSE);
   $items['node/%node/view']['weight'] = -10;
-//$items['node/%node/view']['type'] = MENU_DEFAULT_LOCAL_TASK;
+
   $items['node/%node/edit']['access callback'] = '_revisioning_view_edit_access_callback';
   $items['node/%node/edit']['access arguments'] = array('edit', 1);
   $items['node/%node/edit']['page callback'] = '_revisioning_edit';
   $items['node/%node/edit']['page arguments'] = array(1);
   $items['node/%node/edit']['title callback'] = '_revisioning_title_for_tab';
   $items['node/%node/edit']['title arguments'] = array(1, TRUE);
-//$items['node/%node/edit']['type'] = MENU_LOCAL_TASK;
-//$items['node/%node/edit']['context'] = MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE;
-//$items['node/%node/edit']['weight'] = 0;
 
   // 'Revisions' tab remains, but points to new page callback, allowing users
   // to pick the revision to view, edit, publish, revert, unpublish, delete.
@@ -348,14 +345,12 @@ function revisioning_menu_alter(&$items) {
   $items['node/%node/revisions']['access arguments'] = array('view revision list', 1);
   $items['node/%node/revisions']['page callback'] = 'revisioning_node_overview';
   $items['node/%node/revisions']['page arguments'] = array(1);
-//$items['node/%node/revisions']['type'] = MENU_LOCAL_TASK;
-//$items['node/%node/revisions']['weight'] = 2;
 
   // Remove the node.module links as we defined our own versions, using %vid
   unset($items['node/%node/revisions/%/view']);
   unset($items['node/%node/revisions/%/revert']);
   unset($items['node/%node/revisions/%/delete']);
-  
+
   if (module_exists('diff')) {
     // If Diff module is enabled, make sure it uses correct access callback
     $items['node/%node/revisions/view/%/%']['access callback'] = '_revisioning_access_node_revision';
@@ -364,37 +359,15 @@ function revisioning_menu_alter(&$items) {
 }
 
 /**
- * Node load_function called for all 'node/%nid/...' menu items defined above.
- * The default node_load() function from the node.module would have been fine,
- * if it wasn't for bug [#1120272].
- * node_load() first loads the {node} table data, then attaches to it the 
- * {node_revision} data. If $vid is empty, we need to specify one, or the object
- * returned may be inconsistent [#1120272]. We choose the current vid, as the
- * user may not have permission to 'view revisions'. We don't know the details
- * until the {node} part (e.g. node type) is loaded. So we do this and let
- * the access callback _revisioning_view_edit_access_callback() assess further
- * details.
- * This approach was abandoned as we ran into trouble elsewhere. 'nid' is
- * expected to be a type name, i.e. 'node'.
- *
-function nid_load($nid, $vid = NULL) {
-  if (empty($vid)) {
-    // Work around D7 bug [#1120272] by passing current vid explicitly
-    $vid = revisioning_get_current_node_revision_id($nid);
-  }
-  return node_load($nid, $vid); // indirectly invokes hook_node_load()
-}
-*/
-
-/**
  * Perform path manipulations for menu items containing the %vid wildcard, ie
  * the ones from revisioning_menu().
- * $map contains what arg() returns, eg $map[0]=='node', $map[1]=='123'...
- * For the case where $arg could not be estatblished $index==3
  * @see http://drupal.org/node/500864
  */
 function vid_to_arg($arg, &$map, $index) {
-  return $arg; // empty($arg) ? revisioning_get_current_node_revision_id($map[1]) : $arg;
+  if (empty($arg)) { // e.g. node/%/revisions
+    $map = array(); // suppresses subtabs of Revisions tab where %vid is omitted
+  }
+  return $arg;
 }
 
 /**
@@ -418,14 +391,14 @@ function revisioning_node_load($nodes, $types) {
     return;
   }
   $node = reset($nodes); // to get first node
-  revisioning_set_basic_node_revision_info($node);
+  revisioning_set_node_revision_info($node);
   if (!empty($node->revision_moderation) && !empty($node->is_current)) {
     // Hack!
     // Because of core bug [#1120272], if the current revision is loaded,
     // $node body and fields may in fact be that of the LATEST revision.
     // So reload with FIELD_LOAD_REVISION ($node->vid is already set correctly).
-    // Make sure to unset the already loaded fields or we end up with two
-    // copies of each field, e.g. 2 tags, 2 image attachments etc.
+    // Make sure to unset the already loaded fields or we end up with 2 copies
+    // of each field, e.g. 2 tags, 2 image attachments etc.
     list($id, $vid, $bundle) = entity_extract_ids('node', $node);
     $options = array('deleted' => FALSE);
     $instances = _field_invoke_get_instances('node', $bundle, $options);
@@ -466,9 +439,8 @@ function revisioning_node_prepare($node) {
  * Called when saving, be it an edit or when creating a node.
  */
 function revisioning_node_presave($node) {
-  revisioning_set_basic_node_revision_info($node);
+  revisioning_set_node_revision_info($node);
   if (!empty($node->revision_moderation)) {
-    //$node->is_pending = _revisioning_node_is_pending($node); // set by revisioning_node_load, if not new
     if (!empty($node->revision) && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
       revisioning_set_status_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
       // Update the $node object just before it is saved to the db
@@ -517,7 +489,8 @@ function revisioning_node_update($node) {
        ':nid' => $node->nid));
   }
   elseif (!empty($node->current_revision_id) && $node->current_revision_id != $node->vid) {
-    // Resetting title and vid back to their originial values, thus creating pending revision.
+    // Resetting title and vid back to their originial values, thus creating 
+    // pending revision.
     // Note: cannot use old_vid as set by node_save(), as this refers to revision edited.
     db_query("UPDATE {node} SET vid = :vid, title = :title WHERE nid = :nid", array(
        ':vid' => $node->current_revision_id,

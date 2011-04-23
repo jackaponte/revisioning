@@ -34,7 +34,7 @@ define('REVISION_PENDING', 2);
  * multiple calls to retrieve the same info in various places.
  * Called from revisioning_nodeapi();
  */
-function revisioning_set_basic_node_revision_info(&$node) {
+function revisioning_set_node_revision_info(&$node) {
   if (!isset($node->num_revisions)) {
     // We need this info even for content that is not moderated.
     // Luckily this info does not take long to compile.
@@ -150,7 +150,7 @@ function revisioning_revision_states($state = NULL) {
  * o the node is not yet published and consists of a single revision
  *
  * Relies on vid, current_revision_id and num_revisions set on the node object,
- * see function revisioning_set_basic_node_revision_info()
+ * see function revisioning_set_node_revision_info()
  *
  * @param $node
  * @return TRUE, if node is pending according to the above definition
