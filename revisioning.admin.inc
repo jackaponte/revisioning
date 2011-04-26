@@ -42,9 +42,9 @@ function revisioning_admin_configure() {
     if (module_exists('taxonomy')) {
       $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Where applicable add a <strong>Tags</strong> column to the content revisions summary (Revisions tab).'),
+        '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),
         '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
-        '#description' => t('This column will only be shown if tags have been defined.')
+        '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
       );
     }
     if (module_exists('workflow')) {

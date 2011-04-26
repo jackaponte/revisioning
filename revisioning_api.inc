@@ -518,11 +518,16 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   $sql_from   = ' FROM {node_revision} r INNER JOIN {node} n ON r.nid=n.nid INNER JOIN {users} u ON r.uid=u.uid';
   $sql_where  = ' WHERE r.nid = :nid ORDER BY r.vid DESC';
   if ($include_taxonomy_terms) {
-    $sql_select .= ', ttd.name AS term';
-    $sql_from .= ' LEFT JOIN {field_revision_field_tags} frt ON r.vid = frt.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frt.field_tags_tid=ttd.tid';
-  //$field = 'tags';
-  //$sql_from .= " LEFT JOIN {field_revision_field_$field} frf_$field ON r.vid = frf_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frf_$field.field_{$field}_tid=ttd.tid";
-    $sql_where .= ', term ASC';
+    $node = node_load($nid);
+    $conditions = array('type' => 'taxonomy_term_reference');
+    $fields = field_read_fields($conditions);
+    foreach ($fields as $field => $data) {
+      $field_instance = field_read_instance('node', $field, $node->type);
+      if ($field_instance) {
+        $sql_select .= ", ttd_$field.name AS " . ($field == 'field_tags' ? 'tags' : 'term');
+        $sql_from .= " LEFT JOIN {field_revision_$field} r_$field ON r.vid = r_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd_$field ON r_$field.{$field}_tid=ttd_$field.tid";
+      }
+    }
   }
   $sql = $sql_select . $sql_from . $sql_where;
   $result = db_query($sql, array(':nid' => $nid));
@@ -531,7 +536,7 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
     if (empty($revisions[$revision->vid])) {
       $revisions[$revision->vid] = $revision;
     }
-    elseif ($include_taxonomy_terms) {
+    elseif (!empty($revisions[$revision->vid]->term)) {
       // If a revision has more than one taxonomy term, these will be returned
       // by the query as seperate objects differing only in their terms.
       $revisions[$revision->vid]->term .= ' ' . $revision->term;
@@ -574,6 +579,7 @@ function _revisioning_node_info_msg($node) {
   );
   $revision_type = _revisioning_revision_is($node);
   switch ($revision_type) {
+
     case REVISION_PENDING:
       return t('Displaying <em>pending</em> revision of @content_type %title, last modified by !author on @date', $placeholder_data);
 
@@ -679,13 +685,12 @@ function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modi
     variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
   $include_workflow_state = module_exists('workflow') && count(workflow_get_all()) > 0;
   if ($include_taxonomy_terms) {
-    // Machine names of free-tagging and fixed-term vocabularies are stored in
-    // {taxonomy_vocabulary}. Make a list of associated tables and join these
-    // with {node_revision} (on vid) and {taxonomy_term_data} (on tid).
-    // Currently only supporting tags, not terms @todo
-    $sql_select .= ', ttd.name AS term';
-    $field = 'tags';
-    $sql_from .= " LEFT JOIN {field_revision_field_$field} frf_$field ON r.vid = frf_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frf_$field.field_{$field}_tid=ttd.tid";
+    $conditions = array('type' => 'taxonomy_term_reference');
+    $fields = field_read_fields($conditions);
+    foreach ($fields as $field => $data) {
+      $sql_select .= ", ttd_$field.name AS " . ($field == 'field_tags' ? 'tags' : 'term');
+      $sql_from .= " LEFT JOIN {field_revision_$field} r_$field ON r.vid = r_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd_$field ON r_$field.{$field}_tid=ttd_$field.tid";
+    }
   }
   if ($include_workflow_state) {
     $sql_select .= ', ws.state';

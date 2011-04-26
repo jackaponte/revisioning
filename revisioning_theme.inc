@@ -38,8 +38,8 @@ function revisioning_theme() {
  */
 function revisioning_revisions_summary($form, &$form_state, $extra) {
 
-  // #type=>'value' form field values will not appear in the HTML. Used to pass
-  // the node id to theme_revisioning_revisions_summary().
+  // #type=>'value' form field values will not appear in the HTML. Used here
+  // to pass the node id to theme_revisioning_revisions_summary().
   $nid = $extra; // or: $form_state['build_info']['args'][0];
   $form['nid'] = array('#type' => 'value', '#value' => $nid);
 
@@ -68,15 +68,29 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
       '#markup' => $first_cell
     );
 
-    // Third column: term (2nd column is handled below)
-    if ($show_taxonomy_terms) {
+    // Third & fourth columns: term (2nd column is handled below)
+    if (!empty($revision->tags)) {
+      $form['tags'][$vid] = array(
+        '#type' => 'item',
+        '#markup' => $revision->tags
+      );
+      $has_tags = TRUE;
+    }
+    if (!empty($revision->term)) {
       $form['term'][$vid] = array(
         '#type' => 'item',
-        '#markup' => isset($revision->term) ? $revision->term : ''
+        '#markup' => $revision->term
       );
+      $has_terms = TRUE;
     }
   } // foreach
 
+  if (empty($has_tags)) {
+    unset($form['tags']);
+  }
+  if (empty($has_terms)) {
+    unset($form['term']);
+  }
   revisioning_set_status_message(format_plural(count($revisions),
     '%title is @publication_status. It has only one revision',
     '%title is @publication_status. It has @count revisions.',
@@ -171,16 +185,17 @@ function theme_revisioning_revisions_summary($variables) {
   $revision_ids = element_children($form['info']);
 
   $show_diff = count($revision_ids) >= 2 && module_exists('diff');
-  $show_taxonomy_terms = module_exists('taxonomy') &&
-    variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 
   // Set up the table header
   $header = array(t('Revision'));
   if ($show_diff) {
     $header[] = array('data' => drupal_render($form['submit']), 'class' => 'form-submit');
   }
-  if ($show_taxonomy_terms) {
+  if (isset($form['tags'])) {
     $header[] = t('Tags');
+  }
+  if (isset($form['term'])) {
+    $header[] = t('Terms');
   }
   $header[] = t('Status');
 
@@ -191,14 +206,20 @@ function theme_revisioning_revisions_summary($variables) {
     $row = array();
     // column #1: Revision info
     $row[] = drupal_render($form['info'][$vid]);
+
     // column #2: Compare checkbox
     if ($show_diff) {
       $row[] = array('data' => drupal_render($form['tickbox'][$vid]));
     }
-    // column #3: Term
-    if ($show_taxonomy_terms) {
+
+    // columns #3 & #4: Tags & Terms
+    if (isset($form['tags'])) {
+      $row[] = drupal_render($form['tags'][$vid]);
+    }
+    if (isset($form['term'])) {
       $row[] = drupal_render($form['term'][$vid]);
     }
+
     // column #4: Publication status
     $is_current = ($vid == $node->vid);
     $is_pending = ($vid > $node->vid) || $is_initial_unpublished_draft;
@@ -208,6 +229,7 @@ function theme_revisioning_revisions_summary($variables) {
     else {
       $row[] = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
+
     // Apply CSS class
     $row_style = $is_current ? array('revision-current') : ($is_pending ? array('revision-pending') : array());
     if ($is_current && $node->status == NODE_PUBLISHED) {
