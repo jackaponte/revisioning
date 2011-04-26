@@ -520,6 +520,8 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   if ($include_taxonomy_terms) {
     $sql_select .= ', ttd.name AS term';
     $sql_from .= ' LEFT JOIN {field_revision_field_tags} frt ON r.vid = frt.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frt.field_tags_tid=ttd.tid';
+  //$field = 'tags';
+  //$sql_from .= " LEFT JOIN {field_revision_field_$field} frf_$field ON r.vid = frf_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frf_$field.field_{$field}_tid=ttd.tid";
     $sql_where .= ', term ASC';
   }
   $sql = $sql_select . $sql_from . $sql_where;
@@ -650,8 +652,8 @@ define('NO_FILTER', '-1');
  *   "ORDER BY ..." clause to be added, defaults to "timestamp DESC".
  * @return
  *   An array of node objects each containing nid, content type, published flag,
- *   creator-id, title+vid+modifier-id+timestamp of the current revision, plus taxonomy
- *   term(s) and workflow state, if these modules are installed and enabled.
+ *   creator-id, title+vid+modifier-id+timestamp of the current revision, plus
+ *   taxonomy term(s) and workflow state, if these modules are enabled.
  *
  * @todo
  *   Allow paging, improve performance
@@ -677,8 +679,13 @@ function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modi
     variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
   $include_workflow_state = module_exists('workflow') && count(workflow_get_all()) > 0;
   if ($include_taxonomy_terms) {
+    // Machine names of free-tagging and fixed-term vocabularies are stored in
+    // {taxonomy_vocabulary}. Make a list of associated tables and join these
+    // with {node_revision} (on vid) and {taxonomy_term_data} (on tid).
+    // Currently only supporting tags, not terms @todo
     $sql_select .= ', ttd.name AS term';
-    $sql_from .= ' LEFT JOIN {field_revision_field_tags} frt ON r.vid = frt.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frt.field_tags_tid=ttd.tid';
+    $field = 'tags';
+    $sql_from .= " LEFT JOIN {field_revision_field_$field} frf_$field ON r.vid = frf_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd ON frf_$field.field_{$field}_tid=ttd.tid";
   }
   if ($include_workflow_state) {
     $sql_select .= ', ws.state';

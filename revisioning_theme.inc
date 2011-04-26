@@ -180,7 +180,7 @@ function theme_revisioning_revisions_summary($variables) {
     $header[] = array('data' => drupal_render($form['submit']), 'class' => 'form-submit');
   }
   if ($show_taxonomy_terms) {
-    $header[] = t('Terms & Tags');
+    $header[] = t('Tags');
   }
   $header[] = t('Status');
 
