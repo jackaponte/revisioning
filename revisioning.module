@@ -452,7 +452,8 @@ function revisioning_node_presave($node) {
     if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
       revisioning_set_status_message(t('Auto-publishing this revision.'));
       $node->status = NODE_PUBLISHED;
-      // Make sure the 'update' does NOT reset vid, so that new revision becomes current
+      // Make sure revisioning_node_update() does NOT reset vid, so that new
+      // revision becomes current, as opposed to pending.
       unset($node->current_revision_id);
     }
   }
@@ -483,7 +484,8 @@ function revisioning_node_update($node) {
   }
   if (empty($node->revision)) { // update only, no new revision is to be created
     // function _node_save_revision($node) sets the $node->vid to the latest
-    // revision -- need to undo.
+    // revision (core bug) -- need to undo and set to current instead.
+    $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
     db_query("UPDATE {node} SET vid = :vid WHERE nid = :nid", array(
        ':vid' => $node->current_revision_id,
        ':nid' => $node->nid));
