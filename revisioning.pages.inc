@@ -2,60 +2,59 @@
 
 /**
  * @file
- * Rendering and altering of pages and forms used by Revisioning
+ * Rendering and altering of pages and forms used by Revisioning.
  */
 
 /**
  * Implements hook_form_alter().
  *
- * Note: for cases where the FORM_ID is known a priori use
+ * Note: for cases where the FORM_ID is known a priori we use
  * revisioning_form_FORM_ID_form_alter(), e.g. revisioning_form_node_type_form_alter()
  */
 function revisioning_form_alter(&$form, &$form_state, $form_id) {
-  // Alter the Create/Edit form
-  if (isset($form['#id']) && $form['#id'] == 'node-form') {
+  // Alter the Create/Edit form for a node
+  if (!empty($form['#node_edit_form'])) {
 
     $content_type = $form['type']['#value'];
-    // Note that $form_id == $content_type_$form['#id']
+
     $form['options']['#collapsed'] = FALSE;
     // Only add this tick-box if user has the 'administer nodes' permission
     if (user_access('administer nodes')) {
+      $form['menu']['#collapsed'] = TRUE;
+      $form['revision_information']['#collapsed'] = FALSE;
       $form['revision_information']['revision_moderation'] = array(
         '#title' => t('New revision in draft, pending moderation'),
+        '#description' => t('The current published revision will remain visible to the public until the pending revision is approved and published by a user with the right permissions.'),
         '#type' => 'checkbox',
         '#default_value' => revisioning_content_is_moderated($content_type)
       );
     }
     else {
-      // Don't show tickbox, just set default on form
+      // For non-admin don't show tickbox, just set the default on the form
       $form['revision_moderation'] = array(
         '#type' => 'value',
         '#value' => revisioning_content_is_moderated($content_type)
       );
     }
 
+    // In addition to node_form_submit() append our own handler to the list, so
+    // that we can redirect to the pending, as opposed to current, revision.
+    $form['actions']['submit']['#submit'][] = '_revisioning_form_submit';
+
     $nid = $form['#node']->nid;
-    if (isset($form['buttons']['delete']) && revisioning_get_number_of_revisions($nid) > 1) {
-      // Special treatment for Delete button when there's multiple revisions.
-      // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
-      $form['buttons']['delete']['#value'] = t('Delete all revisions');
-    }
-
-    if (!variable_get('revisioning_allow_workflow_transition_via_edit_form', TRUE)) {
-      unset($form['workflow']);
-    }
-
-    // In addition to node_form_submit() append our own handler to the list.
-    $form['buttons']['submit']['#submit'][] = '_revisioning_form_submit';
-
-    // Change the meaning of the 'Delete (all revisions)' button when editing
-    // a revision to be the deletion of the viewed revision, rather than the
-    // node.
-    $nid = $form['#node']->nid;
-    $vid = $form['#node']->vid;
-    if (isset($form['buttons']['delete']) && user_access('delete revisions') && $vid != revisioning_get_current_node_revision_id($nid)) {
-      $form['buttons']['delete']['#value'] = 'Delete this revision';
-      $form['buttons']['delete']['#submit'][] = '_revisioning_delete_submit';
+    if (is_array($form['actions']['delete']) && revisioning_get_number_of_revisions($nid) > 1) {
+      // Special treatment for Delete button when there are multiple revisions.
+      if ($form['#node']->vid == revisioning_get_current_node_revision_id($nid)) {
+        // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
+        $form['actions']['delete']['#value'] = t('Delete all revisions');
+      }
+      elseif (user_access('delete revisions')) {
+        // Change the meaning of the 'Delete' button when editing a revision
+        // to be the deletion of the viewed revision, rather than the node
+        // node.
+        $form['actions']['delete']['#value'] = 'Delete this revision';
+        $form['actions']['delete']['#submit'][] = '_revisioning_delete_submit';
+      }
     }
   }
 }
@@ -79,7 +78,7 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
     '#collapsed' => FALSE
   );
   $form['workflow']['revisioning']['new_revisions'] = array(
-    '#title' => t('Create new revision'),
+    '#title' => t('Create new revision:'),
     '#type' => 'radios',
     '#options' => array(
       NEW_REVISION_WHEN_NOT_PENDING => t('Only when saving %type content that is not already in draft/pending moderation', array('%type' => $content_type)),

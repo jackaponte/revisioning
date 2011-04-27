@@ -33,29 +33,17 @@ function revisioning_admin_configure() {
     '#default_value' => variable_get('revisioning_edit_callback', REVISIONING_LOAD_CURRENT),
     '#description' => t('The first option represents default core behaviour.')
   );
-  if (module_exists('taxonomy') || module_exists('workflow')) {
+  if (module_exists('taxonomy')) {
     $form['revisioning_display_options'] = array(
       '#type' => 'fieldset',
       '#title' => t('Display options'),
       '#description' => t('')
     );
-    if (module_exists('taxonomy')) {
-      $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),
-        '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
-        '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
-      );
-    }
-    if (module_exists('workflow')) {
-      $form['revisioning_display_options']['revisioning_allow_workflow_transition_via_edit_form'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Allow workflow state transistion via content edit form'),
-        '#default_value' => variable_get('revisioning_allow_workflow_transition_via_edit_form', TRUE),
-        '#description' => t('If unticked, state transitions are only possible via the Workflow tab. Make sure you have enabled the Workflow tab permissions <a href="!link">here</a>',
-          array('!link' => '/admin/build/workflow/edit'))
-      );
-    }
+    $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),       '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
+      '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
+    );
   }
   return system_settings_form($form);
 }
