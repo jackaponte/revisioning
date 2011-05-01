@@ -142,7 +142,7 @@ function revisioning_menu() {
   // All revision operations 'node/%node/revisions/%vid/<op>' are defined as
   // local subtasks (subtabs) secondary to the primary 'node/%node/revisions'
   // local task (primary tab).
-  // Note the use of %vid as opposed to %. This allows us to manipulate the 
+  // Note the use of %vid as opposed to %. This allows us to manipulate the
   // second argument in the path through vid_to_arg().
 
   // Subtab to the Revisions primary tab to allow going back to the revisions
@@ -182,9 +182,9 @@ function revisioning_menu() {
   //'tab_parent' => 'node/%/revisions',
   );
   // Publish revision local subtask.
-  // As the menu is content type unaware, a further check on 
+  // As the menu is content type unaware, a further check on
   // node->revision_moderation must be made to determine whether it is
-  // appropriate to show this tab. 
+  // appropriate to show this tab.
   // This is done in _revisioning_access_node_revision.
   $items['node/%node/revisions/%vid/publish'] = array(
     'title' => 'Publish this',
@@ -197,9 +197,9 @@ function revisioning_menu() {
     'weight' => -4,
   );
   // Unpublish node local subtask.
-  // As the menu is content type unaware, a further check on 
+  // As the menu is content type unaware, a further check on
   // node->revision_moderation must be made to determine whether it is
-  // appropriate to show this tab. 
+  // appropriate to show this tab.
   // This is done in _revisioning_access_node_revision.
   $items['node/%node/revisions/%vid/unpublish'] = array(
     'title' => 'Unpublish this',
@@ -295,7 +295,7 @@ function revisioning_menu() {
       'weight' => -1
     );
   }
-*/
+ */
   return $items;
 }
 
@@ -463,7 +463,7 @@ function revisioning_node_presave($node) {
  * New node.
  */
 function revisioning_node_insert($node) {
-  // Can't check for $node->revision_moderation, as this set via 
+  // Can't check for $node->revision_moderation, as this set via
   // hook_node_load(), which isn't called for an insert.
   if (revisioning_content_is_moderated($node->type)) {
     revisioning_set_status_message($node->status
@@ -489,7 +489,7 @@ function revisioning_node_update($node) {
        ':nid' => $node->nid));
   }
   elseif (!empty($node->current_revision_id) && $node->current_revision_id != $node->vid) {
-    // Resetting title and vid back to their originial values, thus creating 
+    // Resetting title and vid back to their originial values, thus creating
     // pending revision.
     // Note: cannot use old_vid as set by node_save(), as this refers to revision edited.
     db_query("UPDATE {node} SET vid = :vid, title = :title WHERE nid = :nid", array(
@@ -602,7 +602,7 @@ function _revisioning_operation_appropriate($revision_op, $node) {
         return FALSE;
       }
       break;
-      
+
     case 'edit revisions':
       if (empty($node->revision_moderation) /* && !$node->is_current*/) {
         return FALSE;
@@ -620,7 +620,7 @@ function _revisioning_operation_appropriate($revision_op, $node) {
       break;
 
     case 'unpublish current revision':
-      // If the node isn't meant to be moderated or it is unpublished already 
+      // If the node isn't meant to be moderated or it is unpublished already
       // or we're not looking at the current revision, then unpublish is not an
       // option.
       if (empty($node->revision_moderation) || !$node->status || !$node->is_current) {
@@ -644,7 +644,7 @@ function _revisioning_operation_appropriate($revision_op, $node) {
  * o Is the operation appropriate for this node at this time, e.g. a node must
  *   not be published if it already is or if it isn't under moderation control
  * o Does the user have permission for the requested REVISION operation?
- * o Does the user have the NODE access rights (view/update/delete) for this 
+ * o Does the user have the NODE access rights (view/update/delete) for this
  *   operation?
  *
  * @param $revision_op
@@ -672,10 +672,10 @@ function _revisioning_access_node_revision($revision_op, $node) {
 
 /**
  * Implements hook_node_access().
- * 
+ *
  * This gets invoked from node.module/node_access() after it has checked the
  * standard node permissions using node_node_access() and just before it checks
- * the node_access grants table. 
+ * the node_access grants table.
  * We basically return "don't care" except for one 'view. case, which replicates
  * the node.module. "Don't care" in this case would result in "access denied".
  */
@@ -686,7 +686,7 @@ function revisioning_node_access($node, $node_op, $account) {
   // augmented for the 'view revisions' family of permissions, which apply to
   // both published and unpublished nodes.
   if ($node_op == 'view' && !module_implements('node_grants') &&
-     ($node->status == NODE_PUBLISHED || revisioning_user_node_access('view revisions', $node))) {
+    ($node->status == NODE_PUBLISHED || revisioning_user_node_access('view revisions', $node))) {
     return NODE_ACCESS_ALLOW;
   }
   return NODE_ACCESS_IGNORE;
@@ -698,7 +698,7 @@ function revisioning_node_access($node, $node_op, $account) {
  * At the time that this function is called the CURRENT revision will already
  * have been loaded by the system. However depending on the value of the
  * 'revisioning_view_callback' and 'revisioning_edit_callback' variables (as
- * set on the admin/config/content/revisioning page), this may not be the 
+ * set on the admin/config/content/revisioning page), this may not be the
  * desired revision.
  * If these variables state that the LATEST revision should be loaded, we need
  * to check at this point whether the user has permission to view this revision.
@@ -743,7 +743,7 @@ function _revisioning_view_edit_access_callback($op, $node) {
  * this function determines whether the lastest revision should be loaded
  * instead, in which case it returns REVISIONING_LOAD_LATEST.
  *
- * @param $node, only nodes of content types subject to moderation are 
+ * @param $node, only nodes of content types subject to moderation are
  *   processed by this function
  * @param $op, either 'edit' or 'view'
  * @param $check_access, whether revision access permissions should be
@@ -797,12 +797,12 @@ function revisioning_node_overview($node) {
   }
   module_load_include('inc', 'node', 'node.pages');
   return node_revision_overview($node);
-*/
+ */
 }
 
 /**
  * Menu callback for the primary View tab.
- * 
+ *
  * This is the same callback as used in core, except that in core current and
  * latest revisions are always the same.
  */
@@ -817,7 +817,7 @@ function _revisioning_view($node) {
 
 /**
  * Callback for the primary Edit tab.
- * 
+ *
  * This is the same callback as used in core, except that in core current and
  * latest revisions are always the same.
  */
@@ -841,7 +841,7 @@ function _revisioning_view_revision($node) {
 
 /**
  * Callback to edit a particular revision.
- * 
+ *
  * Note that there is no equivalent of this in core and we should not allow
  * editing of a non-current revision, if $node->revision_moderation is not set.
  * This is the job of the access callback _revisioning_access_node_revision().

@@ -94,7 +94,7 @@ function revisioning_get_current_node_revision_id($nid) {
  *  A single number being the user id (uid).
  */
 function revisioning_get_last_editor($nid, $current = FALSE) {
-  $sql = ($current) 
+  $sql = ($current)
     ? "SELECT vid FROM {node} WHERE nid = :nid"
     : "SELECT MAX(vid) FROM {node_revision} WHERE nid = :nid";
   $vid = db_query($sql, array(':nid' => $nid))->fetchField();
@@ -306,7 +306,7 @@ function _revisioning_publish_node($nid_or_node) {
   );
   cache_clear_all(); // required?
 }
-*/
+ */
 
 /**
  * Unpublish node, without calling node_save().
@@ -389,7 +389,7 @@ function _revisioning_unpublish_revision(&$node) {
 function _revisioning_publish_revision(&$node_revision) {
 
   $return = module_invoke_all('revisionapi', 'pre publish', $node_revision);
-  if(in_array(FALSE, $return)){
+  if (in_array(FALSE, $return)) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
     die;
   }
@@ -409,7 +409,7 @@ function _revisioning_publish_revision(&$node_revision) {
     ':nid' => $node_revision->nid,
     ':vid' => $node_revision->vid)
   );
-*/
+ */
   cache_clear_all(); // ? required ?
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);
@@ -420,7 +420,7 @@ function _revisioning_publish_revision(&$node_revision) {
  * and publish it and its node.
  * Note that no check is made as to whether the initiating user has permission
  * to publish this node.
- * Note that this is a post-save operation that should not be called in 
+ * Note that this is a post-save operation that should not be called in
  * response to hook_node_presave(), as invoked from node_save().
  *
  * @param $node

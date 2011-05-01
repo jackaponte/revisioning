@@ -21,7 +21,7 @@ function revisioning_trigger_info() {
     // Revisioning's implementations of hook_some_op are further down in this
     // file.
     'revisioning' => array( // or 'node'
-      'revision_publish' => array( 
+      'revision_publish' => array(
         'label' => t('When publishing a pending revision'),
       ),
       'revision_unpublish' => array(
@@ -37,7 +37,7 @@ function revisioning_trigger_info() {
 
 /**
  * Implements hook_revision_publish().
- * 
+ *
  * Called from revisioning_revisionapi().
  */
 function revisioning_revision_publish($revision) {
@@ -46,7 +46,7 @@ function revisioning_revision_publish($revision) {
 
 /**
  * Implements hook_revision_unpublish().
- * 
+ *
  * Called from revisioning_revisionapi().
  */
 function revisioning_revision_unpublish($revision) {
@@ -55,7 +55,7 @@ function revisioning_revision_unpublish($revision) {
 
 /**
  * Implements hook_revision_revert().
- * 
+ *
  * Called from revisioning_revisionapi().
  */
 function revisioning_revision_revert($revision) {
@@ -64,7 +64,7 @@ function revisioning_revision_revert($revision) {
 
 /**
  * Execute all actions associated with the supplied trigger.
- * 
+ *
  * * @param $revision
  *  the node object as passed in from revisioning_revisionapi();
  *  if omitted this function will try to load the node object based on the URL
@@ -82,7 +82,7 @@ function revisioning_action_revision_trigger($revision, $hook) {
   }
   // Prepare a context to pass to all the actions to be invoked.
   // Include everything we can think of (important for token replacement).
-  // @see token_tokens()
+  // See token_tokens()
   global $user;
   $context = array(
     'group' => 'revisioning',
@@ -127,11 +127,11 @@ function revisioning_action_revision_trigger($revision, $hook) {
   }
 }
 
-/*---------------------------------- Actions --------------------------------*/
+/* ---------------------------------- Actions ------------------------------ */
 
 /**
  * Implements hook_action_info().
- * 
+ *
  * Defines actions available in the Revisioning module.
  */
 function revisioning_action_info() {
@@ -152,7 +152,7 @@ function revisioning_action_info() {
 
 /**
  * As declared in revisioning_action_info().
- * 
+ *
  * Called from actions.inc/actions_do()
  * @param $entity, in our case the node in question
  * @param $context, an array with $context['hook'] telling us which trigger

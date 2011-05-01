@@ -21,7 +21,7 @@ function revisioning_views_data() {
  */
 function revisioning_views_data_alter(&$data) {
 
-   $data['node']['last_editor'] = array(
+  $data['node']['last_editor'] = array(
     'title' => t('Last edited by'),
     'help' => t('The name of the user who last edited this content.'),
     'field' => array(

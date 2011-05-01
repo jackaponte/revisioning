@@ -192,9 +192,9 @@ function revisioning_revision_delete_confirm_pre_submit($form, &$form_state) {
 function revisioning_revert_confirm_pre_submit($form, &$form_state) {
   $node = $form['#node_revision'];
   $return = module_invoke_all('revisionapi', 'pre revert', $node);
-   if (in_array(FALSE, $return)) {
-     drupal_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
-     die;
+  if (in_array(FALSE, $return)) {
+    drupal_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
+    die;
   }
 }
 
@@ -324,7 +324,7 @@ function revisioning_block_configure($delta = 'pending') {
     '#type' => 'textfield',
     '#title' => t('Page to go to when the block title is clicked'),
     '#default_value' => variable_get('revisioning_content_summary_page', ''),
-    '#description' => t('When left blank this will default to %accessible_content, provided Module Grants Montior is enabled and the user has sufficient permissions. Otherwise %view_content or %admin_content will be used, subject to permissions.<br>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
+    '#description' => t('When left blank this will default to %accessible_content, provided Module Grants Montior is enabled and the user has sufficient permissions. Otherwise %view_content or %admin_content will be used, subject to permissions.<br/>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
       '%accessible_content' => 'accessible-content',
       '%view_content' => 'content-summary',
       '%admin_content' => 'admin/content'))
