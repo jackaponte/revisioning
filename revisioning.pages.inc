@@ -41,19 +41,21 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     // that we can redirect to the pending, as opposed to current, revision.
     $form['actions']['submit']['#submit'][] = '_revisioning_form_submit';
 
-    $nid = $form['#node']->nid;
-    if (is_array($form['actions']['delete']) && revisioning_get_number_of_revisions($nid) > 1) {
-      // Special treatment for Delete button when there are multiple revisions.
-      if ($form['#node']->vid == revisioning_get_current_node_revision_id($nid)) {
-        // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
-        $form['actions']['delete']['#value'] = t('Delete all revisions');
-      }
-      elseif (user_access('delete revisions')) {
-        // Change the meaning of the 'Delete' button when editing a revision
-        // to be the deletion of the viewed revision, rather than the node
-        // node.
-        $form['actions']['delete']['#value'] = 'Delete this revision';
-        $form['actions']['delete']['#submit'][] = '_revisioning_delete_submit';
+    if (isset($form['actions']['delete'])) {
+      $nid = $form['#node']->nid;
+      if (revisioning_get_number_of_revisions($nid) > 1) {
+        // Special treatment for Delete button when there are 2 or more revisions.
+        if ($form['#node']->vid == revisioning_get_current_node_revision_id($nid)) {
+          // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
+          $form['actions']['delete']['#value'] = t('Delete all revisions');
+        }
+        elseif (user_access('delete revisions')) {
+          // Change the meaning of the 'Delete' button when editing a revision
+          // to be the deletion of the viewed revision, rather than the node
+          // node.
+          $form['actions']['delete']['#value'] = 'Delete this revision';
+          $form['actions']['delete']['#submit'][] = '_revisioning_delete_submit';
+        }
       }
     }
   }
@@ -265,11 +267,14 @@ function _revisioning_set_info_message() {
  * revision we've just edited, so we get latest revision id from the database.
  */
 function _revisioning_form_submit($form, &$form_state) {
-  $nid = $form['#node']->nid; // Don't use $form_state['nid'], will NOT be empty for a new node
-  // Don't redirect when creating new node or when the displayed vid is the current
-  if (!empty($nid) && ($vid = revisioning_get_latest_revision_id($nid)) &&
-    $vid != revisioning_get_current_node_revision_id($nid)) {
+  // Don't redirect when creating new node or when the displayed revision is the
+  // current
+  if (isset($form['#node']->nid)) { // don't use $form_state['nid'], will NOT be empty for a new node
+    $nid = $form['#node']->nid;
+    $vid = revisioning_get_latest_revision_id($nid);
+    if ($vid != revisioning_get_current_node_revision_id($nid)) {
       $form_state['redirect'] = "node/$nid/revisions/$vid/view";
+    }
   }
 }
 

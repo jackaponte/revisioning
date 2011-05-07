@@ -109,7 +109,7 @@ function revisioning_get_last_editor($nid, $current = FALSE) {
  *  TRUE if the currently loaded node revision is the current revision
  */
 function revisioning_revision_is_current($node) {
-  return !is_null($node) && ($node->current_revision_id == $node->vid);
+  return isset($node->vid) && isset($node->current_revision_id) && $node->vid == $node->current_revision_id;
 }
 
 /**
@@ -156,7 +156,8 @@ function revisioning_revision_states($state = NULL) {
  * @return TRUE, if node is pending according to the above definition
  */
 function _revisioning_node_is_pending($node) {
-  return ($node->vid > $node->current_revision_id) || (!$node->status && $node->num_revisions == 1);
+  return isset($node->vid) && isset($node->current_revision_id) &&
+    ($node->vid > $node->current_revision_id || (!$node->status && $node->num_revisions == 1));
 }
 
 /**
