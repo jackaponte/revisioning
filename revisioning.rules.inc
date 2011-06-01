@@ -18,7 +18,7 @@ function revisioning_rules_condition_info() {
       'arguments' => array(
         'node' => array('type' => 'node', 'label' => t('Content'))
       ),
-      'help' => t('Evaluates to TRUE, if the node has one or more pending revision'),
+      'help' => t('Evaluates to TRUE, if the node has one or more pending revisions'),
       'module' => 'Revisioning',
     ),
     'revisioning_condition_revision_is' => array(
