@@ -404,13 +404,11 @@ function _revisioning_publish_revision(&$node_revision) {
   db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
     ':vid' => $node_revision->vid)
   );
-/*
   // Database integrity: make sure that no other node revision has its published flag set
-  $ret = db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
+  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
     ':nid' => $node_revision->nid,
     ':vid' => $node_revision->vid)
   );
- */
   cache_clear_all(); // ? required ?
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);
@@ -515,11 +513,12 @@ function _revisioning_get_pending_revisions($nid) {
  *  title, timestamp and name of user that created the revision
  */
 function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms = FALSE) {
-  $sql_select = 'SELECT n.vid AS current, r.vid, r.status, r.title, r.log, r.uid, r.timestamp, u.name';
-  $sql_from   = ' FROM {node_revision} r INNER JOIN {node} n ON r.nid=n.nid INNER JOIN {users} u ON r.uid=u.uid';
+  $node = node_load($nid);
+
+  $sql_select = 'SELECT r.vid, r.status, r.title, r.log, r.uid, r.timestamp, u.name';
+  $sql_from   = ' FROM {node_revision} r INNER JOIN {users} u ON r.uid=u.uid';
   $sql_where  = ' WHERE r.nid = :nid ORDER BY r.vid DESC';
   if ($include_taxonomy_terms) {
-    $node = node_load($nid);
     $conditions = array('type' => 'taxonomy_term_reference');
     $fields = field_read_fields($conditions);
     foreach ($fields as $field => $data) {
@@ -534,7 +533,23 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   $result = db_query($sql, array(':nid' => $nid));
   $revisions = array();
   foreach ($result as $revision) {
+    if ($revision->status) {
+      if ($node->status == NODE_NOT_PUBLISHED) {
+        drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says this content is NOT published but the {node_revision} table says that revision #@vid (also) is.', array(
+          '@nid' => $nid,
+          '@vid' => $revision->vid)),
+       'error');
+      }
+      elseif ($node->vid != $revision->vid) {
+        drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says that revision #@nvid is published, but the {node_revision} table says that revision #@rvid (also) is.', array(
+          '@nid'  => $nid,
+          '@nvid' => $node->vid,
+          '@rvid' => $revision->vid)),
+       'error');
+      }
+    }
     if (empty($revisions[$revision->vid])) {
+      $revision->current = $node->vid;
       $revisions[$revision->vid] = $revision;
     }
     elseif (!empty($revisions[$revision->vid]->term)) {

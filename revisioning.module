@@ -496,6 +496,11 @@ function revisioning_node_update($node) {
        ':vid' => $node->current_revision_id,
        ':title' => $node->current_title,
        ':nid' => $node->nid));
+    // Database integrity: make sure that no other node revision has its published flag set
+    db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
+      ':nid' => $node->nid,
+      ':vid' => $node->current_revision_id)
+    );
   }
 }
 

@@ -42,18 +42,21 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
   // to pass the node id to theme_revisioning_revisions_summary().
   $nid = $extra; // or: $form_state['build_info']['args'][0];
   $form['nid'] = array('#type' => 'value', '#value' => $nid);
-
+  
   $show_taxonomy_terms = module_exists('taxonomy') &&
     variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 
   $revisions = _revisioning_get_all_revisions_for_node($nid, $show_taxonomy_terms);
 
   $revision_ids = array();
+  $published = 0;
   foreach ($revisions as $revision) {
     $vid = $revision->vid;
     if ($vid == $revision->current) {
       $title = $revision->title;
-      $published = $revision->status;
+    }
+    if ($revision->status) {
+      $published++; // should be <= 1
     }
     $revision_ids[$vid] = ''; // no text next to check boxes (see below)
     $base_url = "node/$nid/revisions/$vid";
@@ -83,8 +86,11 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
       );
       $has_terms = TRUE;
     }
+    $form['status'][$vid] = array(
+      '#type' => 'value',
+      '#value' => $revision->status
+    );
   } // foreach
-
   if (empty($has_tags)) {
     unset($form['tags']);
   }
@@ -224,11 +230,15 @@ function theme_revisioning_revisions_summary($variables) {
     $is_current = ($vid == $node->vid);
     $is_pending = ($vid > $node->vid) || $is_initial_unpublished_draft;
     if ($is_pending) {
-      $row[] = array('data' => t('in draft/pending publication'));
+      $status = array('data' => t('in draft/pending publication'));
     }
     else {
-      $row[] = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
+      $status = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
+    if (user_access('administer nodes')) {
+      $status['data'] .= ' [' . $form['status'][$vid]['#value'] . ']';
+    }
+    $row[] = $status;
 
     // Apply CSS class
     $row_style = $is_current ? array('revision-current') : ($is_pending ? array('revision-pending') : array());
