@@ -386,3 +386,20 @@ function _revisioning_block_pending_revisions_content($nodes) {
   $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
   return $block;
 }
+
+/**
+ * Menu callback: confirm node revision data integrity restore.
+ */
+function revision_integrity_restore_confirm() {
+  $nid = arg(1);
+  $form = array(); // put $nid on it?
+  return confirm_form($form, t('Are you sure you want to restore the data integrity of this content?'),
+    "node/$nid/revisions", t('This action cannot be undone.'), t('Restore data integrity'), t('Cancel'));
+}
+
+function revision_integrity_restore_confirm_submit($form, &$form_state) {
+  $nid = arg(1);
+  revisioning_restore_node_revisions_integrity($nid);
+  drupal_set_message(t('Data integrity of node #%nid restored.', array('%nid' => $nid)));
+  $form_state['redirect'] = "node/$nid/revisions";
+}

@@ -238,6 +238,7 @@ function revisioning_menu() {
     'weight' => 10,
   );
 
+
   // If Diff module is enabled, provide a "Compare to current" local subtask
   if (module_exists('diff')) {
     $items['node/%node/revisions/%vid/compare'] = array(
@@ -252,6 +253,15 @@ function revisioning_menu() {
     //'tab_parent' => 'node/%/revisions',
     );
   }
+  
+  $items['node/%node/restore-integrity'] = array(
+    'title' => 'Restore node revision data integrity',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revision_integrity_restore_confirm'),
+    'access arguments' => array('administer nodes'),
+    'type' => MENU_CALLBACK,
+    'file' => 'revisioning.pages.inc',
+  );
 /*
   if (module_exists('module_grants_monitor')) {
     // Add a tab to the 'I created' tab (defined in module_grants_monitor.module)

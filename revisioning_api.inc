@@ -532,20 +532,23 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   $sql = $sql_select . $sql_from . $sql_where;
   $result = db_query($sql, array(':nid' => $nid));
   $revisions = array();
+  $integrity_violations = 0;
   foreach ($result as $revision) {
     if ($revision->status) {
       if ($node->status == NODE_NOT_PUBLISHED) {
         drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says this content is NOT published but the {node_revision} table says that revision #@vid (also) is.', array(
           '@nid' => $nid,
           '@vid' => $revision->vid)),
-       'error');
+        'error');
+        $integrity_violations++;
       }
       elseif ($node->vid != $revision->vid) {
         drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says that revision #@nvid is published, but the {node_revision} table says that revision #@rvid (also) is.', array(
           '@nid'  => $nid,
           '@nvid' => $node->vid,
           '@rvid' => $revision->vid)),
-       'error');
+        'error');
+        $integrity_violations++;;
       }
     }
     if (empty($revisions[$revision->vid])) {
@@ -556,6 +559,15 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
       // If a revision has more than one taxonomy term, these will be returned
       // by the query as seperate objects differing only in their terms.
       $revisions[$revision->vid]->term .= ' ' . $revision->term;
+    }
+  }
+  if ($integrity_violations) {
+    if (user_access('administer nodes')) {
+      drupal_set_message(t('You can restore data integrity by clicking <a href="@link">here.</a>', array(
+        '@link' => '/node/'. $node->nid . '/restore-integrity')));
+    }
+    else {
+      drupal_set_message(t('Please contact your site administrator. They will be able to restore data integrity by logging in and visiting this page.'));
     }
   }
   return $revisions;
@@ -777,4 +789,29 @@ function _revisioning_extract_order_clause_from_URI() {
   }
   $direction = (drupal_strtolower($_REQUEST['sort'])== 'asc') ? 'ASC' : 'DESC';
   return "$order_by $direction";
+}
+
+/**
+ * There is normally no need to call this. It is here to fix up node
+ * revision issues that may occur as a result of quirks in D7 that we try
+ * to work around as much as possible.
+ *
+ * @param $nid
+ */
+function revisioning_restore_node_revisions_integrity($nid) {
+  $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(
+    ':nid' => $nid));
+
+  foreach ($result as $node) { } // loops once only
+
+  // Current node revision must have same status as parent node
+  db_query("UPDATE {node_revision} SET status = :status WHERE vid = :vid", array(
+    ':status' => $node->status,
+    ':vid' => $node->vid)
+  );
+  // All other revisions belonging to this node must have their published flag reset
+  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
+    ':nid' => $nid,
+    ':vid' => $node->vid)
+  );
 }
