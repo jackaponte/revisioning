@@ -286,45 +286,24 @@ function _revisioning_revert_revision(&$node, $vid = NULL) {
 }
 
 /**
- * Publish node, without calling node_save()
- *
- * @param $node
- *  Target $node object or nid of target node
- *
-function _revisioning_publish_node($nid_or_node) {
-  $node = is_object($nid_or_node) ? $nid_or_node : node_load($nid_or_node);
-  db_query("UPDATE {node} SET status = 1 WHERE nid = :nid", array(
-    ':nid' => $node->nid)
-  );
-/*
-  db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
-    ':vid' => $node->vid)
-  );
-  // Database integrity: make sure that no other node revision has its published flag set
-  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
-    ':nid' => $node->nid,
-    ':vid' => $node->vid)
-  );
-  cache_clear_all(); // required?
-}
- */
-
-/**
  * Unpublish node, without calling node_save().
  *
  * @param $node
  *  Target $node object or nid of target node
  */
 function _revisioning_unpublish_node($nid_or_node) {
-  $nid = is_object($nid_or_node) ? $nid_or_node->nid : $nid_or_node;
-  db_query("UPDATE {node} SET status = 0 WHERE nid = :nid", array(
-    ':nid' => $nid)
-  );
-  // Database integrity: make sure that no revisions belonging to this node
-  // have their published flag set.
-  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid", array(
-    ':nid' => $nid)
-  );
+  $node = is_object($nid_or_node) ? $nid_or_node : node_load($nid_or_node);
+
+  db_update('node')
+    ->fields(array('status' => NODE_NOT_PUBLISHED))
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  db_update('node_revision')
+    ->fields(array('status' => NODE_NOT_PUBLISHED))
+    ->condition('vid', $node->vid)
+    ->execute();
+
   cache_clear_all(); // requried?
 }
 
@@ -350,9 +329,13 @@ function _revisioning_unpublish_node($nid_or_node) {
 function _revisioning_delete_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
   module_invoke_all('revisionapi', 'pre delete', $node_revision);
+/*
   db_query("DELETE FROM {node_revision} WHERE vid = :vid", array(
     ':vid' => $node_revision->vid)
-  );
+  );*/
+  db_delete('node_revision')
+    ->condition('vid', $node_revision->vid)
+    ->execute();
   module_invoke_all('node_' . $node_revision, 'delete revision');
   watchdog('content', '@type: deleted %title revision %revision.', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid));
 }
@@ -394,22 +377,22 @@ function _revisioning_publish_revision(&$node_revision) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
     die;
   }
-  // Update node table, making sure the "published" (ie. status) flag is set
-  // These queries don't do anything, when called from node_save() on presave.
-  db_query("UPDATE {node} SET vid = :vid, title = :title, status = 1 WHERE nid = :nid", array(
-    ':vid' => $node_revision->vid,
-    ':title' => $node_revision->title,
-    ':nid' => $node_revision->nid)
-  );
-  db_query("UPDATE {node_revision} SET status = 1 WHERE vid = :vid", array(
-    ':vid' => $node_revision->vid)
-  );
-  // Database integrity: make sure that no other node revision has its published flag set
-  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
-    ':nid' => $node_revision->nid,
-    ':vid' => $node_revision->vid)
-  );
+  // Update {node} and {node_revision} tables, setting the "published" (ie. status) flag
+  db_update('node')
+    ->fields(array(
+      'vid' => $node_revision->vid,
+      'title' => $node_revision->title,
+      'status' => NODE_PUBLISHED))
+    ->condition('nid', $node_revision->nid)
+    ->execute();
+
+  db_update('node_revision')
+    ->fields(array('status' => NODE_PUBLISHED))
+    ->condition('vid', $node_revision->vid)
+    ->execute();
+
   cache_clear_all(); // ? required ?
+
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);
 }
@@ -534,31 +517,26 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   $revisions = array();
   $integrity_violations = 0;
   foreach ($result as $revision) {
-    if ($revision->status) {
-      if ($node->status == NODE_NOT_PUBLISHED) {
-        drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says this content is NOT published but the {node_revision} table says that revision #@vid (also) is.', array(
-          '@nid' => $nid,
-          '@vid' => $revision->vid)),
-        'error');
-        $integrity_violations++;
-      }
-      elseif ($node->vid != $revision->vid) {
-        drupal_set_message(t('Data integrity violation on node #@nid: the {node} table says that revision #@nvid is published, but the {node_revision} table says that revision #@rvid (also) is.', array(
-          '@nid'  => $nid,
-          '@nvid' => $node->vid,
-          '@rvid' => $revision->vid)),
-        'error');
-        $integrity_violations++;;
-      }
+    if ($revision->vid == $node->vid && $revision->status != $node->status) {
+      drupal_set_message(t('Data integrity violation on node #%nid/vid #%vid: {node.status} = %node_status while {node_revision.status} = %revision_status.', array(
+        '%nid' => $nid,
+        '%node_satus' => $node->status,
+        '%vid' => $revision->vid,
+        '%revision_status' => $revision->status)),
+      'error');
+      $integrity_violations++;
     }
     if (empty($revisions[$revision->vid])) {
       $revision->current = $node->vid;
       $revisions[$revision->vid] = $revision;
     }
+    // If a revision has more than one tag or taxonomy term, these will be
+    // returned by the query as seperate objects differing only in their terms.
     elseif (!empty($revisions[$revision->vid]->term)) {
-      // If a revision has more than one taxonomy term, these will be returned
-      // by the query as seperate objects differing only in their terms.
-      $revisions[$revision->vid]->term .= ' ' . $revision->term;
+      $revisions[$revision->vid]->term .= ', ' . $revision->term;
+    }
+    elseif (!empty($revisions[$revision->vid]->tags)) {
+      $revisions[$revision->vid]->tags .= ', ' . $revision->tags;
     }
   }
   if ($integrity_violations) {
@@ -799,19 +777,13 @@ function _revisioning_extract_order_clause_from_URI() {
  * @param $nid
  */
 function revisioning_restore_node_revisions_integrity($nid) {
-  $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(
-    ':nid' => $nid));
-
+  $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(':nid' => $nid));
   foreach ($result as $node) { } // loops once only
 
-  // Current node revision must have same status as parent node
-  db_query("UPDATE {node_revision} SET status = :status WHERE vid = :vid", array(
-    ':status' => $node->status,
-    ':vid' => $node->vid)
-  );
-  // All other revisions belonging to this node must have their published flag reset
-  db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
-    ':nid' => $nid,
-    ':vid' => $node->vid)
-  );
+  // Current node revision must have same status as parent node.
+  // Choosing for revision to be the slave to the node.
+  db_update('node_revision')
+    ->fields(array('status' => $node->status))
+    ->condition('vid', $node->vid)
+    ->execute();
 }

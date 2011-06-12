@@ -49,14 +49,12 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
   $revisions = _revisioning_get_all_revisions_for_node($nid, $show_taxonomy_terms);
 
   $revision_ids = array();
-  $published = 0;
+  $published = FALSE;
   foreach ($revisions as $revision) {
     $vid = $revision->vid;
     if ($vid == $revision->current) {
       $title = $revision->title;
-    }
-    if ($revision->status) {
-      $published++; // should be <= 1
+      $published = $revision->status;
     }
     $revision_ids[$vid] = ''; // no text next to check boxes (see below)
     $base_url = "node/$nid/revisions/$vid";
@@ -236,7 +234,7 @@ function theme_revisioning_revisions_summary($variables) {
       $status = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
     if (user_access('administer nodes')) {
-      $status['data'] .= ' [' . $form['status'][$vid]['#value'] . ']';
+      $status['data'] .= ' [status=' . $form['status'][$vid]['#value'] . ']';
     }
     $row[] = $status;
 

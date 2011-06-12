@@ -402,7 +402,7 @@ function revisioning_node_load($nodes, $types) {
   revisioning_set_node_revision_info($node);
   if (!empty($node->revision_moderation) && !empty($node->is_current)) {
     // Hack!
-    // Because of core bug [#1120272], if the current revision is loaded,
+    // Because of core issue [#1120272/#542290], if current revision is loaded,
     // $node body and fields may in fact be that of the LATEST revision.
     // So reload with FIELD_LOAD_REVISION ($node->vid is already set correctly).
     // Make sure to unset the already loaded fields or we end up with 2 copies
@@ -454,9 +454,15 @@ function revisioning_node_presave($node) {
       // Update the $node object just before it is saved to the db
       $node->revision = FALSE;
     }
-    // Save title of current revision to restore at revisioning_node_update() time
-    $result = db_query("SELECT title FROM {node} n WHERE n.nid = :nid", array(':nid' => $node->nid));
-    $node->current_title = $result->fetchField();
+    // Save status and title of current revision to restore at revisioning_node_update() time.
+    // Does not apply to new node, ie. nid not set
+    if (isset($node->nid)) {
+      $result = db_query("SELECT status, title FROM {node} n WHERE n.nid = :nid", array(':nid' => $node->nid));
+      foreach ($result as $node_data) { }
+      $node->current_status = $node_data->status;
+      $node->current_title = $node_data->title;
+    }
+
     if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
       revisioning_set_status_message(t('Auto-publishing this revision.'));
       $node->status = NODE_PUBLISHED;
@@ -487,30 +493,38 @@ function revisioning_node_insert($node) {
  * Implements hook_node_update().
  */
 function revisioning_node_update($node) {
-  if (empty($node->revision_moderation)) {
+  if (empty($node->revision_moderation) || empty($node->current_revision_id)) {
     return;
   }
-  if (empty($node->revision)) { // update only, no new revision is to be created
-    // function _node_save_revision($node) sets the $node->vid to the latest
-    // revision (core bug) -- need to undo and set to current instead.
-    $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
-    db_query("UPDATE {node} SET vid = :vid WHERE nid = :nid", array(
-       ':vid' => $node->current_revision_id,
-       ':nid' => $node->nid));
+  if (empty($node->revision)) { // ie. modify, no new revision is to be created
+    // A loaded node takes its status and vid from its latest revision.
+    // Need to undo and set current status and vid or we'll lose the pending
+    // nature of our revision and the publication status of our node.
+    db_update('node')
+      ->fields(array(
+        'vid' => $node->current_revision_id,
+        'status' => $node->current_status))
+      ->condition('nid', $node->nid)
+      ->execute();
   }
-  elseif (!empty($node->current_revision_id) && $node->current_revision_id != $node->vid) {
-    // Resetting title and vid back to their originial values, thus creating
-    // pending revision.
-    // Note: cannot use old_vid as set by node_save(), as this refers to revision edited.
-    db_query("UPDATE {node} SET vid = :vid, title = :title WHERE nid = :nid", array(
-       ':vid' => $node->current_revision_id,
-       ':title' => $node->current_title,
-       ':nid' => $node->nid));
-    // Database integrity: make sure that no other node revision has its published flag set
-    db_query("UPDATE {node_revision} SET status = 0 WHERE nid = :nid AND vid <> :vid", array(
-      ':nid' => $node->nid,
-      ':vid' => $node->current_revision_id)
-    );
+  elseif ($node->current_revision_id != $node->vid) {
+    // Resetting {node.vid} and {node.title} back to their originial values.
+    // As a result {node.vid} < {node_revision.vid}, which makes the newly
+    // created revision a pending revision, in Revisioning's books at least.
+    // Note: cannot use $node->old_vid as set by node_save(), as this refers to
+    // the revision edited, which may not be the current, which is what we are
+    // after here.
+    db_update('node')
+      ->fields(array(
+        'vid' => $node->current_revision_id,
+        'title' => $node->current_title))
+      ->condition('nid', $node->nid)
+      ->execute();
+    // By default the new revision takes its status from the edited revision. Override.
+    db_update('node_revision')
+      ->fields(array('status' => NODE_NOT_PUBLISHED))
+      ->condition('vid', $node->vid)
+      ->execute();
   }
 }
 

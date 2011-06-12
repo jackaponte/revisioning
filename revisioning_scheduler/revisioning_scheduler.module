@@ -157,7 +157,10 @@ function revisioning_scheduler_cron() {
  * @param $vid the unique revision id
  */
 function _revisioning_scheduler_check($vid) {
-  db_query('DELETE FROM {revisioning_scheduler} WHERE revision_vid = :vid',
+/*db_query('DELETE FROM {revisioning_scheduler} WHERE revision_vid = :vid',
     array(':vid' => $vid)
-  );
+  );*/
+  db_delete('revisioning_scheduler')
+    ->condition(array('revision_vid' => $vid))
+    ->execute();
 }

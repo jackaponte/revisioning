@@ -18,10 +18,11 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     $content_type = $form['type']['#value'];
 
     $form['options']['#collapsed'] = FALSE;
-    // Only add this tick-box if user has the 'administer nodes' permission
+    // Only add the "New revision in draft" tick-box if user has the 'administer nodes' permission
     if (user_access('administer nodes')) {
       $form['menu']['#collapsed'] = TRUE;
       $form['revision_information']['#collapsed'] = FALSE;
+
       $form['revision_information']['revision_moderation'] = array(
         '#title' => t('New revision in draft, pending moderation'),
         '#description' => t('The current published revision will remain visible to the public until the pending revision is approved and published by a user with the right permissions.'),
@@ -392,7 +393,8 @@ function _revisioning_block_pending_revisions_content($nodes) {
  */
 function revision_integrity_restore_confirm() {
   $nid = arg(1);
-  $form = array(); // put $nid on it?
+  $form = array();
+  $form['nid'] = array('#type' => 'value', '#value' => $nid);
   return confirm_form($form, t('Are you sure you want to restore the data integrity of this content?'),
     "node/$nid/revisions", t('This action cannot be undone.'), t('Restore data integrity'), t('Cancel'));
 }
