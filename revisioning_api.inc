@@ -778,7 +778,7 @@ function _revisioning_extract_order_clause_from_URI() {
  */
 function revisioning_restore_node_revisions_integrity($nid) {
   $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(':nid' => $nid));
-  foreach ($result as $node) { } // loops once only
+  $node = $result->fetchObject();
 
   // Current node revision must have same status as parent node.
   // Choosing for revision to be the slave to the node.

@@ -458,7 +458,7 @@ function revisioning_node_presave($node) {
     // Does not apply to new node, ie. nid not set
     if (isset($node->nid)) {
       $result = db_query("SELECT status, title FROM {node} n WHERE n.nid = :nid", array(':nid' => $node->nid));
-      foreach ($result as $node_data) { }
+      $node_data = $result->fetchObject();
       $node->current_status = $node_data->status;
       $node->current_title = $node_data->title;
     }
