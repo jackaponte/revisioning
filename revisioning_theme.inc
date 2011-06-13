@@ -42,7 +42,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
   // to pass the node id to theme_revisioning_revisions_summary().
   $nid = $extra; // or: $form_state['build_info']['args'][0];
   $form['nid'] = array('#type' => 'value', '#value' => $nid);
-  
+
   $show_taxonomy_terms = module_exists('taxonomy') &&
     variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 

@@ -456,7 +456,7 @@ function _revisioning_get_number_of_revisions_newer_than($vid, $nid) {
  *  integer
  */
 function _revisioning_get_number_of_pending_revisions($nid) {
-  $result = db_query("SELECT COUNT(*) FROM {node} n INNER JOIN {node_revision} r ON n.nid = r.nid WHERE (r.vid > n.vid AND n.nid = :nid)", array(
+  $result = db_query("SELECT COUNT(r.vid) FROM {node} n INNER JOIN {node_revision} r ON n.nid = r.nid WHERE (r.vid > n.vid AND n.nid = :nid)", array(
     ':nid' => $nid)
   );
   return $result->fetchField();
@@ -515,17 +515,7 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
   $sql = $sql_select . $sql_from . $sql_where;
   $result = db_query($sql, array(':nid' => $nid));
   $revisions = array();
-  $integrity_violations = 0;
   foreach ($result as $revision) {
-    if ($revision->vid == $node->vid && $revision->status != $node->status) {
-      drupal_set_message(t('Data integrity violation on node #%nid/vid #%vid: {node.status} = %node_status while {node_revision.status} = %revision_status.', array(
-        '%nid' => $nid,
-        '%node_satus' => $node->status,
-        '%vid' => $revision->vid,
-        '%revision_status' => $revision->status)),
-      'error');
-      $integrity_violations++;
-    }
     if (empty($revisions[$revision->vid])) {
       $revision->current = $node->vid;
       $revisions[$revision->vid] = $revision;
@@ -537,15 +527,6 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
     }
     elseif (!empty($revisions[$revision->vid]->tags)) {
       $revisions[$revision->vid]->tags .= ', ' . $revision->tags;
-    }
-  }
-  if ($integrity_violations) {
-    if (user_access('administer nodes')) {
-      drupal_set_message(t('You can restore data integrity by clicking <a href="@link">here.</a>', array(
-        '@link' => '/node/'. $node->nid . '/restore-integrity')));
-    }
-    else {
-      drupal_set_message(t('Please contact your site administrator. They will be able to restore data integrity by logging in and visiting this page.'));
     }
   }
   return $revisions;
@@ -775,15 +756,16 @@ function _revisioning_extract_order_clause_from_URI() {
  * to work around as much as possible.
  *
  * @param $nid
- */
+ *
 function revisioning_restore_node_revisions_integrity($nid) {
   $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(':nid' => $nid));
   $node = $result->fetchObject();
 
   // Current node revision must have same status as parent node.
-  // Choosing for revision to be the slave to the node.
+  // Revision to be the slave to the node or vice versa?
   db_update('node_revision')
-    ->fields(array('status' => $node->status))
+    ->fields(array('status' => $node->status)) // same for title, comment, sticky, promote
     ->condition('vid', $node->vid)
     ->execute();
 }
+ */

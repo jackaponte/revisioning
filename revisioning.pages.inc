@@ -390,7 +390,7 @@ function _revisioning_block_pending_revisions_content($nodes) {
 
 /**
  * Menu callback: confirm node revision data integrity restore.
- */
+ *
 function revision_integrity_restore_confirm() {
   $nid = arg(1);
   $form = array();
@@ -405,3 +405,4 @@ function revision_integrity_restore_confirm_submit($form, &$form_state) {
   drupal_set_message(t('Data integrity of node #%nid restored.', array('%nid' => $nid)));
   $form_state['redirect'] = "node/$nid/revisions";
 }
+ */
