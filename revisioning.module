@@ -424,7 +424,7 @@ function revisioning_node_load($nodes, $types) {
 
 function revisioning_set_status_message($message) {
   if (user_access('view revision status messages')) {
-    drupal_set_message(check_plain($message), 'status');
+    drupal_set_message(filter_xss($message), 'status');
   }
 }
 
