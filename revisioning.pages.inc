@@ -15,10 +15,15 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
   // Alter the Create/Edit form for a node
   if (!empty($form['#node_edit_form'])) {
 
-    $content_type = $form['type']['#value'];
+    $is_moderated_content = revisioning_content_is_moderated($form['type']['#value']);
 
-    $form['options']['#collapsed'] = FALSE;
-    // Only add the "New revision in draft" tick-box if user has the 'administer nodes' permission
+    if (isset($form['revision_information']) && $is_moderated_content) {
+      $form['revision_information']['#weight'] = -3; // move to top and expand, so that it's in user's face
+      $form['revision_information']['revision']['#title'] = t('Create new revision as a draft, pending moderation');
+      $form['revision_information']['revision']['#description'] = t('If you untick this, no new revision will be created and all edits including the Publishing options will be applied to the revision you are editing now. They will be effective immediately.');
+    }
+
+    /* Only add the "New revision in draft" tick-box if user has the 'administer nodes' permission
     if (user_access('administer nodes')) {
       $form['menu']['#collapsed'] = TRUE;
       $form['revision_information']['#collapsed'] = FALSE;
@@ -27,14 +32,14 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
         '#title' => t('New revision in draft, pending moderation'),
         '#description' => t('The current published revision will remain visible to the public until the pending revision is approved and published by a user with the right permissions.'),
         '#type' => 'checkbox',
-        '#default_value' => revisioning_content_is_moderated($content_type)
+        '#default_value' => $is_moderated_content
       );
     }
-    else {
+    else*/ {
       // For non-admin don't show tickbox, just set the default on the form
       $form['revision_moderation'] = array(
         '#type' => 'value',
-        '#value' => revisioning_content_is_moderated($content_type)
+        '#value' => $is_moderated_content
       );
     }
 
@@ -71,7 +76,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
  */
 function revisioning_form_node_type_form_alter(&$form, &$form_state) {
   $form['workflow']['#collapsed'] = FALSE;
-  $form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (requires "Create new revision")');
+  $form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (normally requires "Create new revision")');
 
   $content_type = $form['#node_type']->type;
   $form['workflow']['revisioning'] = array(
