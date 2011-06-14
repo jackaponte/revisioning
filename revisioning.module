@@ -496,7 +496,8 @@ function revisioning_node_update($node) {
   // Have to do this due to D7's "sick" denormalisation of node revision data.
   // Resetting the fields duplicated from new {node_revision} back to their
   // originial values to match the current revision as opposed to the latest
-  // revision, as set by node_save() just before it calls this function.
+  // revision. The latter is done by node_save() just before it calls this
+  // function.
   // By resetting {node.vid} {node.vid} < {node_revision.vid}, which makes the
   // newly created revision a pending revision in Revisioning's books.
   // Note: cannot use $node->old_vid as set by node_save(), as this refers to
@@ -505,6 +506,7 @@ function revisioning_node_update($node) {
   db_update('node')
     ->fields(array(
       'vid'     => $node->current_revision_id,
+      'status'  => $node->current_status,
       'title'   => $node->current_title,
       'comment' => $node->current_comment,
       'promote' => $node->current_promote,
