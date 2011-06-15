@@ -450,21 +450,34 @@ function revisioning_node_prepare($node) {
  * Implements hook_node_presave().
  *
  * Called when saving, be it an edit or when creating a node.
+ *
+ * Note that the following may be set programmatically on the $node object 
+ * before calling node_save($node):
+ * o $node->revision_moderation -- if not TRUE revisioning is OFF for this node
+ * o $node->revision_condition  -- either NEW_REVISION_EVERY_SAVE or NEW_REVISION_WHEN_NOT_PENDING
+ *
+ * If $node->revision_condition is not set, then a new revision is/isn't created
+ * based on the core flag $node->revision, as set on the node edit form
+ * (defaulting to what is set on the content type edit form).
  */
 function revisioning_node_presave($node) {
   revisioning_set_node_revision_info($node);
   if (!empty($node->revision_moderation)) {
 
-    if (!empty($node->revision) && $node->is_pending && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
-      revisioning_set_status_message(t('Updating existing copy, not creating new revision as this one is still pending.'));
-      // Update the $node just before it is saved to the db
-      $node->revision = FALSE;
+    if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
+      && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
+      revisioning_set_status_message(t('Updating existing draft, not creating new revision as this one is still pending.'));
+      $node->revision_condition = NEW_REVISION_WHEN_NOT_PENDING; // to tell revisioning_node_update()
     }
-    // Set status, title etc to current revision before handing back to node_save().
-    // Does not apply to new node, ie. nid not set.
+    if (isset($node->revision_condition)) {
+      // Tell node_save() whether a new revision should be created.
+      $node->revision = ($node->revision_condition == NEW_REVISION_EVERY_SAVE);
+    }
+    // Set status, title etc to current revision before handing back to
+    // node_save(). Not required for new node, ie. nid not set.
     if (isset($node->nid)) {
-      // @TODO remove hard-coding
-      $result = db_query("SELECT status, title, comment, promote, sticky FROM {node_revision} WHERE vid = :vid", array(':vid' => $node->current_revision_id));
+      $result = db_query("SELECT status, title, comment, promote, sticky FROM {node_revision} WHERE vid = :vid", 
+        array(':vid' => $node->current_revision_id));
       $current_revision = $result->fetchObject();
       // Copy from {node_revision} the field values replicated on {node}.
       // This is a side-effect of core D7's somewhat "sick" denormalisation.
@@ -478,9 +491,8 @@ function revisioning_node_presave($node) {
     if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
       revisioning_set_status_message(t('Auto-publishing this revision.'));
       $node->status = NODE_PUBLISHED;
-      // Make sure revisioning_node_update() does NOT reset vid back to the
-      // current_revision_id. The default process is followed and this
-      // revision will be made current, as opposed to pending.
+      // The default process is followed and this revision will be made
+      // current and publshed, as opposed to pending.
       unset($node->revision_moderation);
     }
   }
@@ -488,12 +500,16 @@ function revisioning_node_presave($node) {
 
 /**
  * Implements hook_node_update().
+ *
+ * Note: $node->revision_moderation and $node->revision_condition may be set
+ * programmatically prior to calling node_save().
+ * See also: revisioning_node_pre_save().
  */
 function revisioning_node_update($node) {
   if (empty($node->revision_moderation)) {
     return;
   }
-  if (!empty($node->revision)) {
+  if (isset($node->revision_condition) || !empty($node->revision)) { // enter when revision_condition=0,1
     // Have to do this due to D7's "sick" denormalisation of node revision data.
     // Resetting the fields duplicated from new {node_revision} back to their
     // originial values to match the current revision as opposed to the latest
@@ -514,13 +530,6 @@ function revisioning_node_update($node) {
         'sticky'  => $node->current_sticky))
       ->condition('nid', $node->nid)
       ->execute();
-    // Set the status of the new revision to NOT published,
-    // rather than taking the default from the edited revision.
-    /* This may not be necessary
-    db_update('node_revision')
-      ->fields(array('status' => NODE_NOT_PUBLISHED))
-      ->condition('vid', $node->vid)
-      ->execute(); */
   }
 }
 
@@ -530,9 +539,7 @@ function revisioning_node_update($node) {
  * New node.
  */
 function revisioning_node_insert($node) {
-  // Can't check for $node->revision_moderation, as this set via
-  // hook_node_load(), which isn't called for an insert.
-  if (revisioning_content_is_moderated($node->type)) {
+  if (!empty($node->revision_moderation)) {
     revisioning_set_status_message($node->status
       ? t('Initial revision created and published.')
       : t('Initial draft created, pending publication.')

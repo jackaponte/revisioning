@@ -20,7 +20,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     if (isset($form['revision_information']) && $is_moderated_content) {
       $form['revision_information']['#weight'] = -3; // move to top and expand, so that it's in user's face
       $form['revision_information']['revision']['#title'] = t('Create new revision as a draft, pending moderation');
-      $form['revision_information']['revision']['#description'] = t('If you untick this, no new revision will be created and all edits including the Publishing options will be applied to the revision you are editing now. They will be effective immediately.');
+      $form['revision_information']['revision']['#description'] = t('If unticked, no new revision will be created and all edits including the Publishing options will be effective immedatialy when you save the revision you are editing now.');
     }
 
     /* Only add the "New revision in draft" tick-box if user has the 'administer nodes' permission

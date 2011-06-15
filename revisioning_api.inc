@@ -29,15 +29,15 @@ define('REVISION_PENDING', 2);
  */
 
 /**
- * We use this mainly to set up some useful node properties that can be read
- * later, whether it be in this module or another, thus removing the need for
- * multiple calls to retrieve the same info in various places.
- * Called from revisioning_nodeapi();
+ * We use this in revisioning_node_load() to set up some useful node properties
+ * that may be read later, whether it be in this module or another, thus 
+ * removing the need for multiple calls in various places to retrieve the same
+ * info.
  */
 function revisioning_set_node_revision_info(&$node) {
-  if (!isset($node->num_revisions)) {
-    // We need this info even for content that is not moderated.
-    // Luckily this info does not take long to compile.
+  if (!isset($node->num_revisions) && isset($node->nid)) {
+    // We need this info for updated content even if it is not moderated.
+    // Luckily this info is easily retrieved.
     $node->num_revisions = revisioning_get_number_of_revisions($node->nid);
     $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
     $node->is_current = revisioning_revision_is_current($node);

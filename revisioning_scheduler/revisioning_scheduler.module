@@ -3,7 +3,7 @@
  * @file
  * Allows revisions to be published at a specified time and date.
  *
- * @author Adam Bramley <adam@catalyst.net.nz>
+ * @author Adam Bramley <adam@catalyst.net.nz>, Zombienaute (drupal.org)
  */
 
 /**
@@ -152,15 +152,12 @@ function revisioning_scheduler_cron() {
 
 /**
  * Check if there is a scheduled publication date for this revision.
- * If so delete it.
+ * If so delete that date.
  *
  * @param $vid the unique revision id
  */
 function _revisioning_scheduler_check($vid) {
-/*db_query('DELETE FROM {revisioning_scheduler} WHERE revision_vid = :vid',
-    array(':vid' => $vid)
-  );*/
-  db_delete('revisioning_scheduler')
-    ->condition(array('revision_vid' => $vid))
+  return db_delete('revisioning_scheduler')
+    ->condition('revision_vid', $vid)
     ->execute();
 }
