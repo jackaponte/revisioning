@@ -25,7 +25,10 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     if ($is_moderated_content) {
        // "Create new revision" must be set when the node is to be moderated
        $node->revision = TRUE;
+       // Next lines aren't essential, just ensure all form options are
+       // consistent with the edited content being subject to moderation.
        $form['revision_information']['revision']['#default_value'] = TRUE;
+       $form['options']['status']['#default_value'] =  FALSE;
     }
 
     /* Only add this radio selector if user has the 'administer nodes' permission */
@@ -42,6 +45,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       $options[NEW_REVISION_NO_MODERATTION]  = t('Create new revision, no moderation');
       $options[NEW_REVISION_WITH_MODERATION] = t('Create new revision and moderate');
 
+      // This radio selection will appear in hook_node_presave as $node->revision_operation
       $form['revision_information']['revision_operation'] = array(
         '#title' => t('Revision creation and moderation options'),
         '#description' => t('Moderation means that the new revision is not publicly visible until approved by someone with the appropriate permissions.'),
@@ -52,7 +56,6 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
           : ($is_moderated_content ? NEW_REVISION_WITH_MODERATION : NEW_REVISION_NO_MODERATTION)
       );
       unset($form['revision_information']['revision']);
-      // revision_operation will appear on $node object in hook_node_presave()
     }
     else {
       // For non-admin don't show radiobox, just set the default, hidden on form
@@ -370,6 +373,8 @@ function revisioning_block_save($delta = '', $edit = array()) {
  */
 function revisioning_block_view($delta = '') {
   $order = variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP) == REVISIONS_BLOCK_OLDEST_AT_TOP ? 'ASC' : 'DESC';
+  // Requiring node 'update' access is stricter than necessary, but node 'view'
+  // would allow those without 'view revisions' to view the block too.
   $nodes = revisioning_get_nodes('update', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
   if (!empty($nodes)) {
     return _revisioning_block_pending_revisions_content($nodes);

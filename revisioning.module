@@ -403,7 +403,8 @@ function revisioning_node_load($nodes, $types) {
   // At this point status, comment, promote and sticky have been set on all of
   // the $nodes according to the {node_revision} table (not the {node} table),
   // using {node.vid} as the key into {node_revision}.
-  foreach ($nodes as $node) {
+  $nodes_to_be_fixed = array();
+  foreach ($nodes as $nid => $node) {
     revisioning_set_node_revision_info($node);
     if (!empty($node->revision_moderation) && !empty($node->is_current)) {
       // Hack!
@@ -419,11 +420,14 @@ function revisioning_node_load($nodes, $types) {
         $field_name = $instance['field_name'];
         unset($node->{$field_name});
       }
+      $nodes_to_be_fixed[$nid] = $node;
     }
   }
-  if (isset($bundle)) {
-    // @TODO: can we somehow mark the nodes that require reloading before calling this?
-    field_attach_load('node', $nodes, FIELD_LOAD_REVISION);
+  if (!empty($nodes_to_be_fixed)) {
+    field_attach_load_revision('node', $nodes_to_be_fixed);
+    foreach ($nodes_to_be_fixed as $nid => $node) {
+      $nodes[$nid] = $node;
+    }
   }
 }
 
@@ -475,6 +479,8 @@ function revisioning_node_presave($node) {
   }
   if (!isset($node->nid)) { // new node
     if ($node->revision_moderation) { // override the Published tickbox
+      // This is not required for correct operation, as a revision becomes
+      // pending on its current_revision_id < vid. But it looks better.
       $node->status = NODE_NOT_PUBLISHED;
     }
     return;
