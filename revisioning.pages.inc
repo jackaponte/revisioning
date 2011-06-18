@@ -12,31 +12,51 @@
  * revisioning_form_FORM_ID_form_alter(), e.g. revisioning_form_node_type_form_alter()
  */
 function revisioning_form_alter(&$form, &$form_state, $form_id) {
-  // Alter the Create/Edit form for a node
+
   if (!empty($form['#node_edit_form'])) {
 
-    $is_moderated_content = revisioning_content_is_moderated($form['type']['#value']);
+    // Alter the Create/Edit content form, if subject to moderation.
+    // For the initial revision the concept of moderations is somewhat ambiguous.
+    $node = &$form['#node'];
+    $is_moderated_content = isset($node->revision_moderation)
+      ? $node->revision_moderation
+      : /*isset($node->nid) &&*/ revisioning_content_is_moderated($form['type']['#value']);
 
-    if (isset($form['revision_information']) && $is_moderated_content) {
-      $form['revision_information']['#weight'] = -3; // move to top and expand, so that it's in user's face
-      $form['revision_information']['revision']['#title'] = t('Create new revision as a draft, pending moderation');
-      $form['revision_information']['revision']['#description'] = t('If unticked, no new revision will be created and all edits including the Publishing options will be effective immedatialy when you save the revision you are editing now.');
+    if ($is_moderated_content) {
+       // "Create new revision" must be set when the node is to be moderated
+       $node->revision = TRUE;
+       $form['revision_information']['revision']['#default_value'] = TRUE;
     }
 
-    /* Only add the "New revision in draft" tick-box if user has the 'administer nodes' permission
+    /* Only add this radio selector if user has the 'administer nodes' permission */
     if (user_access('administer nodes')) {
+      // Expand and move this vertical tab to top, so that it's in user's face
       $form['menu']['#collapsed'] = TRUE;
       $form['revision_information']['#collapsed'] = FALSE;
+      $form['revision_information']['#weight'] = -3;
 
-      $form['revision_information']['revision_moderation'] = array(
-        '#title' => t('New revision in draft, pending moderation'),
-        '#description' => t('The current published revision will remain visible to the public until the pending revision is approved and published by a user with the right permissions.'),
-        '#type' => 'checkbox',
-        '#default_value' => $is_moderated_content
+      $options = array();
+      if (isset($node->nid)) {
+        $options[NO_REVISION] = t('Modify current revision, no moderation');
+      }
+      $options[NEW_REVISION_NO_MODERATTION]  = t('Create new revision, no moderation');
+      $options[NEW_REVISION_WITH_MODERATION] = t('Create new revision and moderate');
+
+      $form['revision_information']['revision_operation'] = array(
+        '#title' => t('Revision creation and moderation options'),
+        '#description' => t('Moderation means that the new revision is not publicly visible until approved by someone with the appropriate permissions.'),
+        '#type' => 'radios',
+        '#options' => $options,
+        '#default_value' => isset($node->nid)
+          ? (int)$node->revision + (int)$is_moderated_content
+          : ($is_moderated_content ? NEW_REVISION_WITH_MODERATION : NEW_REVISION_NO_MODERATTION)
       );
+      unset($form['revision_information']['revision']);
+      // revision_operation will appear on $node object in hook_node_presave()
     }
-    else*/ {
-      // For non-admin don't show tickbox, just set the default on the form
+    else {
+      // For non-admin don't show radiobox, just set the default, hidden on form
+      // Note that $form['revision_information']['revision'] is already set.
       $form['revision_moderation'] = array(
         '#type' => 'value',
         '#value' => $is_moderated_content
@@ -76,15 +96,15 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
  */
 function revisioning_form_node_type_form_alter(&$form, &$form_state) {
   $form['workflow']['#collapsed'] = FALSE;
-  $form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (normally requires "Create new revision")');
+  $form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (requires "Create new revision")');
 
-  $content_type = $form['#node_type']->type;
   $form['workflow']['revisioning'] = array(
     '#type' => 'fieldset',
     '#title' => t('New revision in draft'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE
   );
+  $content_type = $form['#node_type']->type;
   $form['workflow']['revisioning']['new_revisions'] = array(
     '#title' => t('Create new revision:'),
     '#type' => 'radios',
@@ -269,19 +289,13 @@ function _revisioning_set_info_message() {
  * Handler for the 'Save' button on the edit form.
  *
  * When saving a new revision we shouldn't redirect to "View current", as
- * that's not the one we've saved. However at this stage, via the form, we
- * don't know the vid of the newly created revision, only the vid of the
- * revision we've just edited, so we get latest revision id from the database.
+ * that's not the one we've saved.
  */
 function _revisioning_form_submit($form, &$form_state) {
-  // Don't redirect when creating new node or when the displayed revision is the
-  // current
-  if (isset($form['#node']->nid)) { // don't use $form_state['nid'], will NOT be empty for a new node
-    $nid = $form['#node']->nid;
-    $vid = revisioning_get_latest_revision_id($nid);
-    if ($vid != revisioning_get_current_node_revision_id($nid)) {
-      $form_state['redirect'] = "node/$nid/revisions/$vid/view";
-    }
+  // Don't redirect when creating new node or when not moderated.
+  // Note the use of $form vs $form_state
+  if (isset($form['#node']->nid) && $form_state['node']->revision_moderation) {
+    $form_state['redirect'] = 'node/'. $form_state['node']->nid . '/revisions/' . $form_state['node']->vid . '/view';
   }
 }
 

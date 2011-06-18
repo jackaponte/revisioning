@@ -8,6 +8,11 @@
  * by a moderator.
  */
 
+// The 3 states a piece of content may be saved as
+define('NO_REVISION', 0);
+define('NEW_REVISION_NO_MODERATTION', 1);
+define('NEW_REVISION_WITH_MODERATION', 2);
+
 define('REVISIONING_LOAD_CURRENT', 0); // node/%nid/view, node/%nid/edit opens current revision
 define('REVISIONING_LOAD_LATEST',  1); // node/%nid/view, node/%nid/edit opens latest revison
 
@@ -187,7 +192,7 @@ function revisioning_menu() {
   // appropriate to show this tab.
   // This is done in _revisioning_access_node_revision.
   $items['node/%node/revisions/%vid/publish'] = array(
-    'title' => 'Publish this',
+    'title' => 'Publish',
     'load arguments' => array(3),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('revisioning_publish_confirm', 1),
@@ -202,7 +207,7 @@ function revisioning_menu() {
   // appropriate to show this tab.
   // This is done in _revisioning_access_node_revision.
   $items['node/%node/revisions/%vid/unpublish'] = array(
-    'title' => 'Unpublish this',
+    'title' => 'Unpublish',
     'load arguments' => array(3),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('revisioning_unpublish_confirm', 1),
@@ -453,15 +458,27 @@ function revisioning_node_prepare($node) {
  *
  * Note that the following may be set programmatically on the $node object 
  * before calling node_save($node):
- * o $node->revision_moderation -- if not TRUE revisioning is OFF for this node
- * o $node->revision_condition  -- either NEW_REVISION_EVERY_SAVE or NEW_REVISION_WHEN_NOT_PENDING
- *
- * If $node->revision_condition is not set, then a new revision is/isn't created
- * based on the core flag $node->revision, as set on the node edit form
- * (defaulting to what is set on the content type edit form).
+ * o $node->revision_operation, one of:
+ *   NO_REVISION ($node->revision == $node->revision_moderation == FALSE)
+ *   NEW_REVISION_NO_MODERATION ($node->revision == TRUE, $node->revision_moderation == FALSE)
+ *   NEW_REVISION_WITH_MODERATION ($node->revision == $node->revision_moderation == TRUE)
+ * o $node->revision_condition (applies only to NEW_REVISION_WITH_MODERATION):
+ *   NEW_REVISION_EVERY_SAVE
+ *   NEW_REVISION_WHEN_NOT_PENDING
  */
 function revisioning_node_presave($node) {
   revisioning_set_node_revision_info($node);
+
+  if (isset($node->revision_operation)) {
+    $node->revision = ($node->revision_operation > NO_REVISION);
+    $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
+  }
+  if (!isset($node->nid)) { // new node
+    if ($node->revision_moderation) { // override the Published tickbox
+      $node->status = NODE_NOT_PUBLISHED;
+    }
+    return;
+  }
   if (!empty($node->revision_moderation)) {
 
     if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
@@ -473,26 +490,24 @@ function revisioning_node_presave($node) {
       // Tell node_save() whether a new revision should be created.
       $node->revision = ($node->revision_condition == NEW_REVISION_EVERY_SAVE);
     }
-    // Set status, title etc to current revision before handing back to
-    // node_save(). Not required for new node, ie. nid not set.
-    if (isset($node->nid)) {
-      $result = db_query("SELECT status, title, comment, promote, sticky FROM {node_revision} WHERE vid = :vid", 
-        array(':vid' => $node->current_revision_id));
-      $current_revision = $result->fetchObject();
-      // Copy from {node_revision} the field values replicated on {node}.
-      // This is a side-effect of core D7's somewhat "sick" denormalisation.
-      $node->current_status  = $current_revision->status;
-      $node->current_title   = $current_revision->title;
-      $node->current_comment = $current_revision->comment;
-      $node->current_promote = $current_revision->promote;
-      $node->current_sticky  = $current_revision->sticky;
-    }
+
+    $result = db_query("SELECT status, title, comment, promote, sticky FROM {node_revision} WHERE vid = :vid",
+      array(':vid' => $node->current_revision_id));
+    $current_revision = $result->fetchObject();
+    // Copy from {node_revision} the field values replicated on {node} before
+    // handing back to node_save(). This is a side-effect of core D7's somewhat
+    // "sick" table denormalisation.
+    $node->current_status  = $current_revision->status;
+    $node->current_title   = $current_revision->title;
+    $node->current_comment = $current_revision->comment;
+    $node->current_promote = $current_revision->promote;
+    $node->current_sticky  = $current_revision->sticky;
 
     if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
       revisioning_set_status_message(t('Auto-publishing this revision.'));
       $node->status = NODE_PUBLISHED;
-      // The default process is followed and this revision will be made
-      // current and publshed, as opposed to pending.
+      // Follow the default saving process making this revision current and
+      // published, as opposed to pending.
       unset($node->revision_moderation);
     }
   }
@@ -643,7 +658,7 @@ function _revisioning_operation_appropriate($revision_op, $node) {
         // Suppress Revisions tab when when there's only 1 revision -- consistent with core.
         // However, when content is moderated (i.e. "New revision in draft,
         // pending moderation" is ticked) we want to be able to get to the
-        // 'Unpublish current' link on this page and the 'Publish this' tab on
+        // 'Unpublish current' link on this page and the 'Publish' tab on
         // the next. Also when user has permission to delete node, we need to
         // present the Delete link, unless we assume that this privilege
         // assumes the 'edit' permission.
