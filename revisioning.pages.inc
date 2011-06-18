@@ -121,7 +121,7 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
     '#default_value' => (int)variable_get('revisioning_auto_publish_' . $content_type, FALSE),
-    '#description' => t('If this box is ticked and the logged-in user has the "publish revisions" permission, then any draft of type %type is published immeditaley upon saving, without further review.', array('%type' => $content_type))
+    '#description' => t('If this box is ticked and the logged-in user has the "Publish content revisions" permission, then any draft of type %type is published immeditaley upon saving, without further review.', array('%type' => $content_type))
   );
 }
 
@@ -282,7 +282,7 @@ function _revisioning_set_info_message() {
       }
     }
     if (count($moderated_types) > 0) {
-      drupal_set_message(t('You have permission to publish revisions of type(s): %moderated_types.',
+      drupal_set_message(t('You have permission to publish content revisions of type(s): %moderated_types.',
         array('%moderated_types' => implode(', ', $moderated_types))));
     }
   }
