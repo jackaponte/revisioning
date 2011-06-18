@@ -294,7 +294,7 @@ function _revisioning_set_info_message() {
 function _revisioning_form_submit($form, &$form_state) {
   // Don't redirect when creating new node or when not moderated.
   // Note the use of $form vs $form_state
-  if (isset($form['#node']->nid) && $form_state['node']->revision_moderation) {
+  if (isset($form['#node']->nid) && !empty($form_state['node']->revision_moderation)) {
     $form_state['redirect'] = 'node/'. $form_state['node']->nid . '/revisions/' . $form_state['node']->vid . '/view';
   }
 }
@@ -305,9 +305,7 @@ function _revisioning_form_submit($form, &$form_state) {
  * Redirect to node/%/revisions/%/delete as opposed to node/%/delete
  */
 function _revisioning_delete_submit(&$form, &$form_state) {
-  $nid = $form['#node']->nid;
-  $vid = $form['#node']->vid;
-  $form_state['redirect'][0] = "node/$nid/revisions/$vid/delete";
+  $form_state['redirect'][0] = 'node/'. $form['#node']->nid . '/revisions/' . $form['#node']->vid . '/delete';
 }
 
 

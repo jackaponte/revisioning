@@ -400,30 +400,30 @@ function vid_to_arg($arg, &$map, $index) {
  * @param $types
  */
 function revisioning_node_load($nodes, $types) {
-  // At this point status, comment, promote and sticky have been set on the
-  // $nodes according to the {node_revision} table (not the {node} table),
+  // At this point status, comment, promote and sticky have been set on all of
+  // the $nodes according to the {node_revision} table (not the {node} table),
   // using {node.vid} as the key into {node_revision}.
-  if (count($nodes) != 1) {
-    // Not sure this is a good idea, but it is certainly efficient...
-    return;
-  }
-  $node = reset($nodes); // to get first node
-  revisioning_set_node_revision_info($node);
-  if (!empty($node->revision_moderation) && !empty($node->is_current)) {
-    // Hack!
-    // Because of core issue [#1120272/#542290], if current revision is loaded,
-    // $node body and other fields may in fact be that of the LATEST revision.
-    // So reload with FIELD_LOAD_REVISION ($node->vid is already set correctly).
-    // Make sure to unset the already loaded fields or we end up with 2 copies
-    // of each field, e.g. 2 tags, 2 image attachments etc.
-    list($id, $vid, $bundle) = entity_extract_ids('node', $node);
-    $options = array('deleted' => FALSE);
-    $instances = _field_invoke_get_instances('node', $bundle, $options);
-    foreach ($instances as $instance) {
-      $field_name = $instance['field_name'];
-      unset($node->{$field_name});
+  foreach ($nodes as $node) {
+    revisioning_set_node_revision_info($node);
+    if (!empty($node->revision_moderation) && !empty($node->is_current)) {
+      // Hack!
+      // Because of core issue [#1120272/#542290], if the current revision is
+      // loaded, $node fields may in fact be those belonging to LATEST revision.
+      // So reload with FIELD_LOAD_REVISION. We can rely on $node->vid, that
+      // attribute is set correctly.
+      // Make sure to unset the already loaded fields or we end up with 2 copies
+      // of each field, e.g. 2 bodies, 2 tags, 2 image attachments etc.
+      list($nid, $vid, $bundle) = entity_extract_ids('node', $node);
+      $instances = _field_invoke_get_instances('node', $bundle, array('deleted' => FALSE));
+      foreach ($instances as $instance) {
+        $field_name = $instance['field_name'];
+        unset($node->{$field_name});
+      }
     }
-    field_attach_load('node', $nodes, FIELD_LOAD_REVISION, $options);
+  }
+  if (isset($bundle)) {
+    // @TODO: can we somehow mark the nodes that require reloading before calling this?
+    field_attach_load('node', $nodes, FIELD_LOAD_REVISION);
   }
 }
 
