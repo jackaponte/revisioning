@@ -30,7 +30,7 @@ define('REVISION_PENDING', 2);
 
 /**
  * We use this in revisioning_node_load() to set up some useful node properties
- * that may be read later, whether it be in this module or another, thus 
+ * that may be read later, whether it be in this module or another, thus
  * removing the need for multiple calls in various places to retrieve the same
  * info.
  */

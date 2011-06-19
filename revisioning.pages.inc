@@ -20,15 +20,15 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     $node = &$form['#node'];
     $is_moderated_content = isset($node->revision_moderation)
       ? $node->revision_moderation
-      : /*isset($node->nid) &&*/ revisioning_content_is_moderated($form['type']['#value']);
+      : /* isset($node->nid) && */ revisioning_content_is_moderated($form['type']['#value']);
 
     if ($is_moderated_content) {
-       // "Create new revision" must be set when the node is to be moderated
-       $node->revision = TRUE;
-       // Next lines aren't essential, just ensure all form options are
-       // consistent with the edited content being subject to moderation.
-       $form['revision_information']['revision']['#default_value'] = TRUE;
-       $form['options']['status']['#default_value'] =  FALSE;
+      // "Create new revision" must be set when the node is to be moderated
+      $node->revision = TRUE;
+      // Next lines aren't essential, just ensure all form options are
+      // consistent with the edited content being subject to moderation.
+      $form['revision_information']['revision']['#default_value'] = TRUE;
+      $form['options']['status']['#default_value'] = FALSE;
     }
 
     /* Only add this radio selector if user has the 'administer nodes' permission */
@@ -298,7 +298,7 @@ function _revisioning_form_submit($form, &$form_state) {
   // Don't redirect when creating new node or when not moderated.
   // Note the use of $form vs $form_state
   if (isset($form['#node']->nid) && !empty($form_state['node']->revision_moderation)) {
-    $form_state['redirect'] = 'node/'. $form_state['node']->nid . '/revisions/' . $form_state['node']->vid . '/view';
+    $form_state['redirect'] = 'node/' . $form_state['node']->nid . '/revisions/' . $form_state['node']->vid . '/view';
   }
 }
 
@@ -308,7 +308,7 @@ function _revisioning_form_submit($form, &$form_state) {
  * Redirect to node/%/revisions/%/delete as opposed to node/%/delete
  */
 function _revisioning_delete_submit(&$form, &$form_state) {
-  $form_state['redirect'][0] = 'node/'. $form['#node']->nid . '/revisions/' . $form['#node']->vid . '/delete';
+  $form_state['redirect'][0] = 'node/' . $form['#node']->nid . '/revisions/' . $form['#node']->vid . '/delete';
 }
 
 

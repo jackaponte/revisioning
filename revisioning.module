@@ -460,7 +460,7 @@ function revisioning_node_prepare($node) {
  *
  * Called when saving, be it an edit or when creating a node.
  *
- * Note that the following may be set programmatically on the $node object 
+ * Note that the following may be set programmatically on the $node object
  * before calling node_save($node):
  * o $node->revision_operation, one of:
  *   NO_REVISION ($node->revision == $node->revision_moderation == FALSE)
