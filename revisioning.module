@@ -402,7 +402,7 @@ function vid_to_arg($arg, &$map, $index) {
 function revisioning_node_load($nodes, $types) {
   // At this point status, comment, promote and sticky have been set on all of
   // the $nodes according to the {node_revision} table (not the {node} table),
-  // using {node.vid} as the key into {node_revision}.
+  // using {node.vid} as the foreign key into {node_revision}.
   $nodes_to_be_fixed = array();
   foreach ($nodes as $nid => $node) {
     revisioning_set_node_revision_info($node);
@@ -477,14 +477,15 @@ function revisioning_node_presave($node) {
     $node->revision = ($node->revision_operation > NO_REVISION);
     $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
   }
+  if ($node->revision_moderation) { // override the Published tickbox
+    // This is not required for correct operation, as a revision becomes
+    // pending when its vid > current_revision_id. But it looks less confusing.
+    $node->status = NODE_NOT_PUBLISHED;
+  }
   if (!isset($node->nid)) { // new node
-    if ($node->revision_moderation) { // override the Published tickbox
-      // This is not required for correct operation, as a revision becomes
-      // pending on its current_revision_id < vid. But it looks better.
-      $node->status = NODE_NOT_PUBLISHED;
-    }
     return;
   }
+
   if (!empty($node->revision_moderation)) {
 
     if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
