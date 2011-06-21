@@ -477,7 +477,7 @@ function revisioning_node_presave($node) {
     $node->revision = ($node->revision_operation > NO_REVISION);
     $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
   }
-  if ($node->revision_moderation) { // override the Published tickbox
+  if (!empty($node->revision_moderation)) { // override the Published tickbox
     // This is not required for correct operation, as a revision becomes
     // pending when its vid > current_revision_id. But it looks less confusing.
     $node->status = NODE_NOT_PUBLISHED;

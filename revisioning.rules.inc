@@ -19,7 +19,7 @@ function revisioning_rules_condition_info() {
         'node' => array('type' => 'node', 'label' => t('Content'))
       ),
       'help' => t('Evaluates to TRUE, if the node has one or more pending revisions'),
-      'module' => 'Revisioning',
+      'module' => 'revisioning',
     ),
     'revisioning_condition_revision_is' => array(
       'label' => t('Content revision is'),
@@ -27,7 +27,7 @@ function revisioning_rules_condition_info() {
         'node' => array('type' => 'node', 'label' => t('Content'))
       ),
       'help' => t('Evaluates to TRUE, if revision is one of selected types'),
-      'module' => 'Revisioning',
+      'module' => 'revisioning',
     ),
   );
 }
@@ -83,7 +83,7 @@ function revisioning_node_has_pending_label($settings, $argument_labels) {
  */
 function revisioning_rules_event_info() {
   $default = array(
-    'module' => 'Revisioning',
+    'module' => 'revisioning',
     'arguments' =>  _revisioning_rules_event_arguments(),
     'redirect' => TRUE,
   );
@@ -185,7 +185,7 @@ function revisioning_events_argument_current_revision($node) {
  */
 function revisioning_rules_action_info() {
   $default = array(
-    'module' => 'Revisioning',
+    'module' => 'revisioning',
   );
   return array(
     'revisioning_rules_action_publish_latest' => $default + array(
