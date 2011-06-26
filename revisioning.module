@@ -660,15 +660,12 @@ function _revisioning_operation_appropriate($revision_op, $node) {
       return !$node->is_current;
 
     case 'view revision list': // i.e. node revisions summary
-      if ($node->num_revisions == 1 && empty($node->revision_moderation)
-        /* && (module_exists('module_grants') ? !module_grants_node_access('delete', $node) : !node_access('delete', $node))*/) {
+      if (empty($node->revision_moderation) && isset($node->num_revisions) && $node->num_revisions == 1) {
         // Suppress Revisions tab when when there's only 1 revision -- consistent with core.
         // However, when content is moderated (i.e. "New revision in draft,
         // pending moderation" is ticked) we want to be able to get to the
         // 'Unpublish current' link on this page and the 'Publish' tab on
-        // the next. Also when user has permission to delete node, we need to
-        // present the Delete link, unless we assume that this privilege
-        // assumes the 'edit' permission.
+        // the next.
         return FALSE;
       }
       break;

@@ -344,7 +344,7 @@ function revisioning_block_configure($delta = 'pending') {
     '#options' => array(
       REVISIONS_BLOCK_OLDEST_AT_TOP => t('Oldest at top'),
       REVISIONS_BLOCK_NEWEST_AT_TOP => t('Newest at top')),
-    '#default_value' => variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP),
+    '#default_value' => variable_get('revisioning_block_order', REVISIONS_BLOCK_NEWEST_AT_TOP),
     '#description' => t('Note: order is based on revision timestamps.')
   );
   $form['revisioning_content_summary_page'] = array(
@@ -372,59 +372,36 @@ function revisioning_block_save($delta = '', $edit = array()) {
  * Implements hook_block_view().
  */
 function revisioning_block_view($delta = '') {
-  $order = variable_get('revisioning_block_order', REVISIONS_BLOCK_OLDEST_AT_TOP) == REVISIONS_BLOCK_OLDEST_AT_TOP ? 'ASC' : 'DESC';
-  // Requiring node 'update' access is stricter than necessary, but node 'view'
-  // would allow those without 'view revisions' to view the block too.
-  $nodes = revisioning_get_nodes('update', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
-  if (!empty($nodes)) {
-    return _revisioning_block_pending_revisions_content($nodes);
+  $order = variable_get('revisioning_block_order', REVISIONS_BLOCK_NEWEST_AT_TOP) == REVISIONS_BLOCK_NEWEST_AT_TOP ? 'DESC' : 'ASC';
+  $revisions = revisioning_get_revisions('view revision list', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
+  if (!empty($revisions)) {
+    return _revisioning_block_pending_revisions_content($revisions);
   }
 }
 
-function _revisioning_block_pending_revisions_content($nodes) {
+function _revisioning_block_pending_revisions_content($revisions) {
   $max_num_shown = variable_get('revisioning_block_num_pending', 5);
-  $nodes_to_display = array_slice($nodes, 0, $max_num_shown);
+  $revisions = array_slice($revisions, 0, $max_num_shown);
   $links = array();
-  foreach ($nodes_to_display as $node) {
-    $vid = revisioning_get_latest_revision_id($node->nid);
-    $links[] = l($node->title, "node/$node->nid/revisions/$vid/view");
+  foreach ($revisions as $revision) {
+    // If they exist, should we show multiple pending revisions on the same node?
+    $links[] = l($revision->title, "node/$revision->nid/revisions/$revision->vid/view");
   }
   drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css'); // also loads /revisioning-rtl.css
-  $block = array();
   $title_link = trim(variable_get('revisioning_content_summary_page', ''));
+  $link_options = array();
   if (empty($title_link)) {
-    if (module_exists('module_grants_monitor') && user_tools_user_any_access(module_grants_monitor_perm())) {
-      $title_link = 'accessible-content';
-    }
-    elseif (module_exists('views')) {
+    if (module_exists('views')) {
       $title_link = 'content-summary';
+      $link_options['query'] = array('revision_moderation' => 1, 'state' => 2);
     }
-    else {
+    elseif (user_access('access content overview')) {
       $title_link = 'admin/content';
     }
   }
-  $block['subject'] = l(t('!num_revisions pending',
-    array('!num_revisions' => format_plural(count($nodes), '1 revision', '@count revisions'))),
-    $title_link);
+  $title = t('!num_revisions pending', array('!num_revisions' => format_plural(count($revisions), '1 revision', '@count revisions')));
+  $block = array();
+  $block['subject'] = empty($title_link) ? $title : l($title, $title_link, $link_options);
   $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
   return $block;
 }
-
-/**
- * Menu callback: confirm node revision data integrity restore.
- *
-function revision_integrity_restore_confirm() {
-  $nid = arg(1);
-  $form = array();
-  $form['nid'] = array('#type' => 'value', '#value' => $nid);
-  return confirm_form($form, t('Are you sure you want to restore the data integrity of this content?'),
-    "node/$nid/revisions", t('This action cannot be undone.'), t('Restore data integrity'), t('Cancel'));
-}
-
-function revision_integrity_restore_confirm_submit($form, &$form_state) {
-  $nid = arg(1);
-  revisioning_restore_node_revisions_integrity($nid);
-  drupal_set_message(t('Data integrity of node #%nid restored.', array('%nid' => $nid)));
-  $form_state['redirect'] = "node/$nid/revisions";
-}
- */

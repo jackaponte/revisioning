@@ -616,11 +616,12 @@ function revisioning_moderated_content_types($machine_name = TRUE) {
 define('NO_FILTER', '-1');
 
 /**
- * Retrieve a list of nodes or revisions accessible to the logged-in user via
- * the supplied operation.
+ * Retrieve a list of revisions accessible to the logged-in user via the 
+ * supplied operation.
  *
  * @param $op
- *   Operation, one of 'view', 'update' or 'delete'
+ *   Revision operation, eg 'view revision list' (as used by Pending Revisions
+ *   block)
  * @param $is_published
  *   1 to return only published content
  *   0 to return only content that isn't published
@@ -649,9 +650,10 @@ define('NO_FILTER', '-1');
  *   taxonomy term(s) and workflow state, if these modules are enabled.
  *
  * @todo
- *   Allow paging, improve performance
+ *   This code may need to be reviewed if used for purposes other than the
+ *   Pending Revisions block.
  */
-function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modifier_uid = -1,
+function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $modifier_uid = -1,
   $is_moderated = -1, $is_pending = FALSE, $max = 1000, $order_by_override = NULL) {
   $sql_select = 'SELECT n.nid, r.vid, n.uid AS creator_uid, r.uid, n.type, n.status, r.title, r.timestamp';
   // Join on current revision (vid) except when looking for pending revisions
@@ -670,7 +672,6 @@ function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modi
   $sql_order = " ORDER BY " . (empty($order_by_override) ? _revisioning_extract_order_clause_from_URI() : $order_by_override);
   $include_taxonomy_terms = module_exists('taxonomy') &&
     variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
-  $include_workflow_state = module_exists('workflow') && count(workflow_get_all()) > 0;
   if ($include_taxonomy_terms) {
     $conditions = array('type' => 'taxonomy_term_reference');
     $fields = field_read_fields($conditions);
@@ -679,36 +680,34 @@ function revisioning_get_nodes($op, $is_published = -1, $creator_uid = -1, $modi
       $sql_from .= " LEFT JOIN {field_revision_$field} r_$field ON r.vid = r_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd_$field ON r_$field.{$field}_tid=ttd_$field.tid";
     }
   }
-  if ($include_workflow_state) {
-    $sql_select .= ', ws.state';
-    $sql_from .= ' LEFT JOIN {workflow_node} wn ON wn.nid=n.nid LEFT JOIN {workflow_states} ws ON wn.sid=ws.sid';
-  }
   $sql = $sql_select . $sql_from . $sql_where . $sql_order;
   $node_query_result = db_query_range($sql, 0, $max);
-  $nodes = array();
-  foreach ($node_query_result as $node) {
-    //@todo: express revisioning_content_is_moderated() as WHERE clause, ie. let SQL do the filtering a priori
-    //See revisioning_handler_filter_node_revision_moderation for WHERE clause example.
-    $filter = ($is_moderated < 0) || $is_moderated == revisioning_content_is_moderated($node->type);
-    $access = module_exists('module_grants') ? module_grants_node_access($op, $node) : node_access($op, $node);
-    if ($filter && $access) {
-      if (empty($nodes[$node->nid])) {
-        $nodes[$node->nid] = $node;
+  $revisions = array();
+  foreach ($node_query_result as $revision) {
+    $filter = ($is_moderated < 0) || $is_moderated == revisioning_content_is_moderated($revision->type);
+    if ($filter && _revisioning_access_node_revision($op, $revision)) {
+      if (empty($revisions[$revision->vid])) {
+        $revisions[$revision->vid] = $revision;
       }
-      // If a node has more than one taxonomy term, these will be returned by
-      // the query as seperate objects differing only in their terms.
-      elseif ($include_taxonomy_terms && !empty($node->term)) {
-        // When $is_pending==TRUE more dan one revision may be returned, so
-        // need to check for duplicate terms.
-        $existing_node = $nodes[$node->nid];
-        if (strpos($existing_node->term, $node->term) === FALSE) {
-          // Bit of a quick & dirty -- goes wrong if a term is substr of another
-          $existing_node->term .= " $node->term";
+      // If a revision has more than one taxonomy term, these will be returned
+      // by the query as seperate objects differing only in their terms.
+      elseif ($include_taxonomy_terms) {
+        $existing_revision = $revisions[$revision->vid];
+        if (!empty($revision->term)) {
+          if (strpos($existing_revision->term, $revision->term) === FALSE) {
+            // Bit of a quick & dirty -- goes wrong if a term is substr of another
+            $existing_revision->term .= ", $revision->term";
+          }
+        }
+        if (!empty($revision->tags)) {
+          if (strpos($existing_revision->tags, $revision->tags) === FALSE) {
+            $existing_revision->tags .= ", $revision->tags";
+          }
         }
       }
     }
   }
-  return $nodes;
+  return $revisions;
 }
 
 /**
@@ -749,23 +748,3 @@ function _revisioning_extract_order_clause_from_URI() {
   $direction = (drupal_strtolower($_REQUEST['sort'])== 'asc') ? 'ASC' : 'DESC';
   return "$order_by $direction";
 }
-
-/**
- * There is normally no need to call this. It is here to fix up node
- * revision issues that may occur as a result of quirks in D7 that we try
- * to work around as much as possible.
- *
- * @param $nid
- *
-function revisioning_restore_node_revisions_integrity($nid) {
-  $result = db_query("SELECT status, vid FROM {node} WHERE nid = :nid", array(':nid' => $nid));
-  $node = $result->fetchObject();
-
-  // Current node revision must have same status as parent node.
-  // Revision to be the slave to the node or vice versa?
-  db_update('node_revision')
-    ->fields(array('status' => $node->status)) // same for title, comment, sticky, promote
-    ->condition('vid', $node->vid)
-    ->execute();
-}
- */
