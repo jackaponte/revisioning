@@ -484,55 +484,6 @@ function _revisioning_get_pending_revisions($nid) {
 }
 
 /**
- * Retrieve a list of all revisions (archive, current, pending) belonging to
- * the supplied node.
- *
- * @param $nid
- *  The node id to retrieve.
- * @param $include_taxonomy_terms
- *  Whether to also retrieve the taxonomy terms for each revision
- * @return
- *  An array of revision objects, each with published flag, log message, vid,
- *  title, timestamp and name of user that created the revision
- */
-function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms = FALSE) {
-  $node = node_load($nid);
-
-  $sql_select = 'SELECT r.vid, r.status, r.title, r.log, r.uid, r.timestamp, u.name';
-  $sql_from   = ' FROM {node_revision} r INNER JOIN {users} u ON r.uid=u.uid';
-  $sql_where  = ' WHERE r.nid = :nid ORDER BY r.vid DESC';
-  if ($include_taxonomy_terms) {
-    $conditions = array('type' => 'taxonomy_term_reference');
-    $fields = field_read_fields($conditions);
-    foreach ($fields as $field => $data) {
-      $field_instance = field_read_instance('node', $field, $node->type);
-      if ($field_instance) {
-        $sql_select .= ", ttd_$field.name AS " . ($field == 'field_tags' ? 'tags' : 'term');
-        $sql_from .= " LEFT JOIN {field_revision_$field} r_$field ON r.vid = r_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd_$field ON r_$field.{$field}_tid=ttd_$field.tid";
-      }
-    }
-  }
-  $sql = $sql_select . $sql_from . $sql_where;
-  $result = db_query($sql, array(':nid' => $nid));
-  $revisions = array();
-  foreach ($result as $revision) {
-    if (empty($revisions[$revision->vid])) {
-      $revision->current = $node->vid;
-      $revisions[$revision->vid] = $revision;
-    }
-    // If a revision has more than one tag or taxonomy term, these will be
-    // returned by the query as seperate objects differing only in their terms.
-    elseif (!empty($revisions[$revision->vid]->term)) {
-      $revisions[$revision->vid]->term .= ', ' . $revision->term;
-    }
-    elseif (!empty($revisions[$revision->vid]->tags)) {
-      $revisions[$revision->vid]->tags .= ', ' . $revision->tags;
-    }
-  }
-  return $revisions;
-}
-
-/**
  * Return revision type of the supplied node.
  *
  * @param &$node
@@ -616,7 +567,7 @@ function revisioning_moderated_content_types($machine_name = TRUE) {
 define('NO_FILTER', '-1');
 
 /**
- * Retrieve a list of revisions accessible to the logged-in user via the 
+ * Retrieve a list of revisions accessible to the logged-in user via the
  * supplied operation.
  *
  * @param $op
@@ -645,9 +596,9 @@ define('NO_FILTER', '-1');
  * @param $order_by_override
  *   "ORDER BY ..." clause to be added, defaults to "timestamp DESC".
  * @return
- *   An array of node objects each containing nid, content type, published flag,
- *   creator-id, title+vid+modifier-id+timestamp of the current revision, plus
- *   taxonomy term(s) and workflow state, if these modules are enabled.
+ *   An array of revision objects each containing nid, content type, published
+ *   flag, creator-id, title+vid+modifier-id+timestamp of the current revision,
+ *   plus tags and taxonomy terms.
  *
  * @todo
  *   This code may need to be reviewed if used for purposes other than the
@@ -703,6 +654,63 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
           if (strpos($existing_revision->tags, $revision->tags) === FALSE) {
             $existing_revision->tags .= ", $revision->tags";
           }
+        }
+      }
+    }
+  }
+  return $revisions;
+}
+
+/**
+ * Retrieve a list of all revisions (archive, current, pending) belonging to
+ * the supplied node.
+ *
+ * @param $nid
+ *  The node id to retrieve.
+ * @param $include_taxonomy_terms
+ *  Whether to also retrieve the taxonomy terms for each revision
+ * @return
+ *  An array of revision objects, each with published flag, log message, vid,
+ *  title, timestamp and name of user that created the revision
+ */
+function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms = FALSE) {
+  $node = node_load($nid);
+
+  $sql_select = 'SELECT r.vid, r.status, r.title, r.log, r.uid, r.timestamp, u.name';
+  $sql_from   = ' FROM {node_revision} r INNER JOIN {users} u ON r.uid=u.uid';
+  $sql_where  = ' WHERE r.nid = :nid ORDER BY r.vid DESC';
+  if ($include_taxonomy_terms) {
+    $conditions = array('type' => 'taxonomy_term_reference');
+    $fields = field_read_fields($conditions);
+    foreach ($fields as $field => $data) {
+      $field_instance = field_read_instance('node', $field, $node->type);
+      if ($field_instance) {
+        $sql_select .= ", ttd_$field.name AS " . ($field == 'field_tags' ? 'tags' : 'term');
+        $sql_from .= " LEFT JOIN {field_revision_$field} r_$field ON r.vid = r_$field.revision_id LEFT JOIN {taxonomy_term_data} ttd_$field ON r_$field.{$field}_tid=ttd_$field.tid";
+      }
+    }
+  }
+  $sql = $sql_select . $sql_from . $sql_where;
+  $result = db_query($sql, array(':nid' => $nid));
+  $revisions = array();
+  foreach ($result as $revision) {
+    if (empty($revisions[$revision->vid])) {
+      $revision->current = $node->vid;
+      $revisions[$revision->vid] = $revision;
+    }
+    // If a revision has more than one tag or taxonomy term, these will be
+    // returned by the query as seperate objects differing only in their terms.
+    elseif ($include_taxonomy_terms) {
+      $existing_revision = $revisions[$revision->vid];
+      if (!empty($revision->term)) {
+        if (strpos($existing_revision->term, $revision->term) === FALSE) {
+          // Bit of a quick & dirty -- goes wrong if a term is substr of another
+          $existing_revision->term .= ", $revision->term";
+        }
+      }
+      if (!empty($revision->tags)) {
+        if (strpos($existing_revision->tags, $revision->tags) === FALSE) {
+          $existing_revision->tags .= ", $revision->tags";
         }
       }
     }

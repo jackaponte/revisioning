@@ -58,7 +58,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
           : ($is_moderated_content ? NEW_REVISION_WITH_MODERATION : NEW_REVISION_NO_MODERATTION)
       );
       unset($form['revision_information']['revision']);
-      
+
       // Add javascript to show/hide the "Published" checkbox if the user
       // presses one of the first two radio buttons.
       drupal_add_js(drupal_get_path('module', 'revisioning') . '/revision-radios.js');
