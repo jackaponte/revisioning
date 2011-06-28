@@ -743,7 +743,7 @@ function _revisioning_access_node_revision($revision_op, $node) {
  * This gets invoked from node.module/node_access() after it has checked the
  * standard node permissions using node_node_access() and just before it checks
  * the node_access grants table.
- * We basically return "don't care" except for one 'view. case, which replicates
+ * We basically return "don't care" except for one 'view' case, which replicates
  * the node.module. "Don't care" in this case would result in "access denied".
  */
 function revisioning_node_access($node, $node_op, $account) {

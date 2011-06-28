@@ -15,20 +15,22 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
 
   if (!empty($form['#node_edit_form'])) {
 
-    // Alter the Create/Edit content form, if subject to moderation.
-    // For the initial revision the concept of moderations is somewhat ambiguous.
     $node = &$form['#node'];
+
     $is_moderated_content = isset($node->revision_moderation)
       ? $node->revision_moderation
-      : /* isset($node->nid) && */ revisioning_content_is_moderated($form['type']['#value']);
+      : revisioning_content_is_moderated($form['type']['#value']);
 
+    // Alter the Create/Edit content form, if subject to moderation.
     if ($is_moderated_content) {
       // "Create new revision" must be set when the node is to be moderated
       $node->revision = TRUE;
       // Next lines aren't essential, just ensure all form options are
       // consistent with the edited content being subject to moderation.
       $form['revision_information']['revision']['#default_value'] = TRUE;
-      $form['options']['status']['#default_value'] = FALSE;
+      // For moderated content "Published" box will treated as unticked, always.
+      // Make sure the summary tab says "Not published".
+      $form['options']['status']['#default_value'] = NODE_NOT_PUBLISHED;
     }
 
     /* Only add this radio selector if user has the 'administer nodes' permission */
@@ -56,9 +58,13 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
           : ($is_moderated_content ? NEW_REVISION_WITH_MODERATION : NEW_REVISION_NO_MODERATTION)
       );
       unset($form['revision_information']['revision']);
+      
+      // Add javascript to show/hide the "Published" checkbox if the user
+      // presses one of the first two radio buttons.
+      drupal_add_js(drupal_get_path('module', 'revisioning') . '/revision-radios.js');
     }
     else {
-      // For non-admin don't show radiobox, just set the default, hidden on form
+      // For non-admin don't show radiobox, just set the default, hidden on form.
       // Note that $form['revision_information']['revision'] is already set.
       $form['revision_moderation'] = array(
         '#type' => 'value',
