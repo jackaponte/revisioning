@@ -477,16 +477,28 @@ function revisioning_node_presave($node) {
     $node->revision = ($node->revision_operation > NO_REVISION);
     $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
   }
-  if (!empty($node->revision_moderation)) { // override the Published tickbox
+  if (!empty($node->revision_moderation)) { 
+ 
+    $auto_publish = user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE);
+    if ($auto_publish) {
+      revisioning_set_status_message(t('Auto-publishing this revision.'));
+      // Follow the default saving process making this revision current and
+      // published, as opposed to pending.
+      unset($node->revision_moderation);
+    }
     // This is not required for correct operation, as a revision becomes
-    // pending when its vid > current_revision_id. But it looks less confusing.
-    $node->status = NODE_NOT_PUBLISHED;
+    // pending based on vid > current_revision_id. But it looks less confusing,
+    // if the "Published" box is in sync with the moderation radio buttos.
+    $node->status = $auto_publish ? NODE_PUBLISHED : NODE_NOT_PUBLISHED;
   }
+
   if (!isset($node->nid)) { // new node
     return;
   }
 
-  if (!empty($node->revision_moderation)) {
+  if (!empty($node->revision_moderation) /* || !empty($auto_publish) */) {
+    // May want to do this for auto_publish too, to provide $node->current... to
+    // other modules, as a courtesy.
 
     if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
       && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
@@ -509,14 +521,6 @@ function revisioning_node_presave($node) {
     $node->current_comment = $current_revision->comment;
     $node->current_promote = $current_revision->promote;
     $node->current_sticky  = $current_revision->sticky;
-
-    if (user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE)) {
-      revisioning_set_status_message(t('Auto-publishing this revision.'));
-      $node->status = NODE_PUBLISHED;
-      // Follow the default saving process making this revision current and
-      // published, as opposed to pending.
-      unset($node->revision_moderation);
-    }
   }
 }
 
