@@ -30,7 +30,7 @@ class revisioning_handler_filter_node_revision_moderation extends views_handler_
     }
     else {
       $where_expression = $this->table_alias . '.type IN (' . implode(',', $moderated_content_types) . ')';
-      if ($this->value[0] == REVISIONING_NOT_MODERATED) {
+      if ($this->value[1] == REVISIONING_NOT_MODERATED) {
         $where_expression = "!($where_expression)";
       }
       if ($this->operator == 'not in') {
