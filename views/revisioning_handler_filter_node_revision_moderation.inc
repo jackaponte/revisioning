@@ -23,14 +23,14 @@ class revisioning_handler_filter_node_revision_moderation extends views_handler_
     }
     $this->ensure_my_table();
     if (empty($moderated_content_types)) {
-      if ($this->value[0] == REVISIONING_MODERATED) {
+      if (reset($this->value) == REVISIONING_MODERATED) {
         // None of the content types are moderated, so return nothing
         $this->query->add_where($this->options['group'], '1 = 0');
       }
     }
     else {
       $where_expression = $this->table_alias . '.type IN (' . implode(',', $moderated_content_types) . ')';
-      if ($this->value[1] == REVISIONING_NOT_MODERATED) {
+      if (reset($this->value) == REVISIONING_NOT_MODERATED) {
         $where_expression = "!($where_expression)";
       }
       if ($this->operator == 'not in') {
