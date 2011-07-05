@@ -82,7 +82,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
         // Special treatment for Delete button when there are 2 or more revisions.
         if ($form['#node']->vid == revisioning_get_current_node_revision_id($nid)) {
           // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
-          $form['actions']['delete']['#value'] = t('Delete all revisions');
+          $form['actions']['delete']['#value'] = t('Delete (all revisions)');
         }
         elseif (user_access('delete revisions')) {
           // Change the meaning of the 'Delete' button when editing a revision
@@ -179,11 +179,39 @@ function revisioning_unpublish_confirm($form, &$form_state, $node) {
 function revisioning_unpublish_confirm_submit($form, &$form_state) {
   $nid = $form_state['values']['node_id'];
   _revisioning_unpublish_revision($nid);
-//$type = $form_state['values']['type']; // machine name, eg. 'page' rather than 'Basic page'
   $title = $form_state['values']['title'];
   revisioning_set_status_message(t('%title is no longer publicly visible.', array('%title' => $title)));
   // Redirect to the same page as publish and revert
   $form_state['redirect'] = "node/$nid/revisions";
+}
+
+/**
+ * Return a confirmation page for deleting archived revisione.
+ */
+function revisioning_delete_archived_confirm($form, &$form_state, $node) {
+  $node->num_archived = revisioning_get_number_of_archived_revisions($node);
+  $form['node']  = array('#type' => 'value', '#value' => $node);
+  $t = format_plural($node->num_archived,
+    'Are you sure you want to delete the archived revision of %title?',
+    'Are you sure you want to delete all @count archived revisions of %title?',
+    array('%title' => $node->title)
+  );
+  return confirm_form($form, $t, 'node/' . $node->nid . '/revisions',
+    t('This action cannot be undone.'),
+    t('Delete archived'), t('Cancel'));
+}
+
+/**
+ * Submission handler for the delete_archived_confirm form.
+ */
+function revisioning_delete_archived_confirm_submit($form, &$form_state) {
+  $node = $form_state['values']['node'];
+  revisioning_delete_archived_revisions($node);
+  $t = format_plural($node->num_archived, 'One archived revision deleted.', '@count archived revisions deleted.');
+  revisioning_set_status_message($t);
+  $form_state['redirect'] = ($node->num_revisions - $node->num_archived > 1)
+    ? 'node/' . $node->nid . '/revisions'
+    : 'node/' . $node->nid;
 }
 
 /**

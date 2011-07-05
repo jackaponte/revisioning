@@ -160,6 +160,15 @@ function revisioning_menu() {
     'weight' => -20,
   );
 
+  $items['node/%node/revisions/delete-archived'] = array(
+    'title' => 'Delete archived revisions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('revisioning_delete_archived_confirm', 1),
+    'access callback' => '_revisioning_access_node_revision',
+    'access arguments' => array('delete archived revisions', 1),
+    'type' => MENU_CALLBACK,
+  );
+
   // View revision local subtask
   $items['node/%node/revisions/%vid/view'] = array(
     'title' => 'View',
@@ -664,7 +673,8 @@ function revisioning_user_node_access($revision_op, $node) {
       return user_access($revision_op, $user) ? 'view' : FALSE;
 
     case 'delete revisions':
-      if (!user_access($revision_op, $user)) {
+    case 'delete archived revisions':
+      if (!user_access('delete revisions', $user)) {
         return FALSE;
       }
     case 'delete node':
@@ -698,6 +708,9 @@ function _revisioning_operation_appropriate($revision_op, $node) {
       // @TODO ...unless it's the only revision, in which case delete the
       // entire node; however this requires a different URL.
       return !$node->is_current;
+
+    case 'delete archived revisions':
+      break;
 
     case 'view revision list': // i.e. node revisions summary
       if (empty($node->revision_moderation) && isset($node->num_revisions) && $node->num_revisions == 1) {

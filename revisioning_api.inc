@@ -65,6 +65,32 @@ function revisioning_get_number_of_revisions($nid) {
 }
 
 /**
+ * Get the number of archived revisions belonging to a node.
+ * @param
+ *  $nid, id of the node
+ * @return
+ *  A count representing the number of archived revisions for the node
+ *  Returns zero if there is only one (i.e. current) revision.
+ */
+function revisioning_get_number_of_archived_revisions($node) {
+  $result = db_query("SELECT COUNT(vid) FROM {node_revision} WHERE nid = :nid AND vid < :vid", array(
+    ':nid' => $node->nid,
+    ':vid' => $node->current_revision_id
+  ));
+  return $result->fetchField();
+}
+
+/**
+ * Delete all revisions with a vid less than the current.
+ */
+function revisioning_delete_archived_revisions($node) {
+  return db_delete('node_revision')
+    ->condition('nid', $node->nid)
+    ->condition('vid', $node->current_revision_id, '<')
+    ->execute();
+}
+
+/**
  * Get the id of the current revision that the supplied node is pointing to.
  * Used in cases where the node object wasn't fully loaded or was loaded
  * with a different revision.

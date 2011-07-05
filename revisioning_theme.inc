@@ -320,11 +320,17 @@ function _revisioning_generate_node_links_according_to_permissions($node, $link_
       $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish");
     }
   }
+  if (_revisioning_access_node_revision('delete archived revisions', $node)) {
+    $num_archived = revisioning_get_number_of_archived_revisions($node);
+    if ($num_archived > 0) {
+      $themed_links[] = l(t('Delete archived'), "node/$nid/revisions/delete-archived");
+    }
+  }
   if (_revisioning_access_node_revision('delete node', $node)) {
     $text = // avoiding format_plural [#557050]
       (empty($node->revision_moderation) || $node->num_revisions == 1)
       ? t('Delete')
-      : ($node->num_revisions == 2 ? t('Delete both revisions') : t('Delete all @count revisions', array('@count' => $node->num_revisions)));
+      : t('Delete all'); // ($node->num_revisions == 2 ? t('Delete both revisions') : t('Delete all @count revisions', array('@count' => $node->num_revisions)));
     $themed_links[] = l($text, "node/$nid/delete");
   }
   return $themed_links;
