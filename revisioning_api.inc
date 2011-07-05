@@ -387,7 +387,7 @@ function _revisioning_unpublish_revision(&$node) {
 
 /**
  * Make the supplied revision of the node current and publish it.
- * It is the caller's responsibility to provide a proper revision or nid + vid.
+ * It is the caller's responsibility to provide a proper revision.
  * Note that no check is made as to whether the initiating user has permission
  * to publish this revision.
  *
@@ -416,6 +416,13 @@ function _revisioning_publish_revision(&$node_revision) {
     ->fields(array('status' => NODE_PUBLISHED))
     ->condition('vid', $node_revision->vid)
     ->execute();
+
+  if (empty($node_revision->is_current)) {
+    // Need to set up $node_revision correctly before calling
+    // revisioning_update_taxonomy_index()
+    $node_revision->current_revision_id = $node_revision->vid;
+    revisioning_update_taxonomy_index($node_revision);
+  }
 
   cache_clear_all(); // ? required ?
 
