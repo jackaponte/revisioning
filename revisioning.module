@@ -592,8 +592,9 @@ function revisioning_node_insert($node) {
  */
 function revisioning_update_taxonomy_index($node) {
   if (variable_get('taxonomy_maintain_index_table', TRUE)) {
-    db_delete('taxonomy_index')->condition('nid', $node->nid)->execute();
-    $vid = empty($node->current_revision_id) ? $node->vid : $node->current_revision_id;
+  //db_delete('taxonomy_index')->condition('nid', $node->nid)->execute(); // already executed in taxonomy_update_field()
+    $vid = empty($node->revision_moderation) || empty($node->current_revision_id)
+      ? $node->vid : $node->current_revision_id;
     $tids = revisioning_get_tids($vid);
     $query = db_insert('taxonomy_index')->fields(array('nid', 'tid', 'sticky', 'created'));
     foreach ($tids as $tid) {
