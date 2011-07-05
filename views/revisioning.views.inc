@@ -6,7 +6,7 @@
  */
 
 /**
- * Implements of hook_views_data().
+ * Implements hook_views_data().
  *
  * Ommitted, we're altering existing groups, not creating a new one.
  *
