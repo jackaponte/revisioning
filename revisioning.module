@@ -600,7 +600,7 @@ function revisioning_node_insert($node) {
  * @param $node
  */
 function revisioning_update_taxonomy_index($node) {
-  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+  if (module_exists('taxonomy') && variable_get('taxonomy_maintain_index_table', TRUE)) {
     // Next line may have been executed in taxonomy_update_field(), but also
     // needed for the case where an existing revision is published via
     // _revisioning_publish_revision().
