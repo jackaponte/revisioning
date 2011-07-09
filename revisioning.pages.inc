@@ -25,12 +25,11 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     if ($is_moderated_content) {
       // "Create new revision" must be set when the node is to be moderated
       $node->revision = TRUE;
-      // Next lines aren't essential, just ensure all form options are
+      // Next line is not essential, just ensures form options are
       // consistent with the edited content being subject to moderation.
       $form['revision_information']['revision']['#default_value'] = TRUE;
-      // For moderated content "Published" box will treated as unticked, always.
-      // Make sure the summary tab says "Not published".
-      $form['options']['status']['#default_value'] = NODE_NOT_PUBLISHED;
+      // For moderated content "Published" box will be treated as unticked,
+      // See revisioning_node_presave().
     }
 
     /* Only add this radio selector if user has the 'administer nodes' permission */
@@ -60,8 +59,9 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       unset($form['revision_information']['revision']);
 
       // Add javascript to show/hide the "Published" checkbox if the user
-      // presses one of the first two radio buttons.
-      drupal_add_js(drupal_get_path('module', 'revisioning') . '/revision-radios.js');
+      // presses one of the first two radio buttons. Also updates summary tabs.
+      $js_file = drupal_get_path('module', 'revisioning') . '/revision-radios.js';
+      drupal_add_js($js_file, array('weight' => 1)); // after node.js
     }
     else {
       // For non-admin don't show radiobox, just set the default, hidden on form.
