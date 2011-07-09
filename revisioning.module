@@ -542,7 +542,10 @@ function revisioning_node_presave($node) {
  */
 function revisioning_node_update($node) {
 
-  revisioning_update_taxonomy_index($node); // fix for [#962664]
+  if ($node->status == NODE_NOT_PUBLISHED) {
+    // Published nodes will have been dealt with by taxonomy_field_update()
+    revisioning_update_taxonomy_index($node); // fix for [#962664]
+  }
 
   if (empty($node->revision_moderation)) {
     return;
@@ -578,7 +581,10 @@ function revisioning_node_update($node) {
  */
 function revisioning_node_insert($node) {
 
-  revisioning_update_taxonomy_index($node); // fix for [#962664]
+  if ($node->status == NODE_NOT_PUBLISHED) {
+    // Published nodes will have been dealt with by taxonomy_field_insert()
+    revisioning_update_taxonomy_index($node); // fix for [#962664]
+  }
 
   if (!empty($node->revision_moderation)) {
     revisioning_set_status_message($node->status
@@ -590,9 +596,9 @@ function revisioning_node_insert($node) {
 
 
 /**
- * This is to assure that when moderated content with terms is shown in a
- * View, the correct terms (belonging to the current, rather than latest
- * revision) are displayed.
+ * This is to assure that when content with terms is shown in a View, the
+ * correct terms (those belonging to the current, rather than latest revision)
+ * are displayed.
  *
  * Need to update the {taxonomy_index} table as Views relies on it.
  * Also a workaround for core bug [#962664].
