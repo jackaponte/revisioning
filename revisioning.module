@@ -816,7 +816,7 @@ function revisioning_node_access($node, $node_op, $account) {
   // augmented for the 'view revisions' family of permissions, which apply to
   // both published and unpublished nodes.
   if ($node_op == 'view' && !module_implements('node_grants') &&
-    ($node->status == NODE_PUBLISHED || revisioning_user_node_access('view revisions', $node))) {
+    ($node->status == NODE_PUBLISHED || (!empty($node->revision_moderation) && revisioning_user_node_access('view revisions', $node)))) {
     return NODE_ACCESS_ALLOW;
   }
   return NODE_ACCESS_IGNORE;
