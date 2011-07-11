@@ -97,6 +97,9 @@ function revisioning_rules_event_info() {
     'revisioning_post_revert' => $default + array(
       'label' => t('Content has been reverted to revision'),
     ),
+    'revisioning_pre_publish' => $default + array(
+      'label' => t('Node revision is going to be published'),
+    ),
     'revisioning_pre_delete' => $default + array(
       'label' => t('Content revision is going to be deleted'),
     ),
