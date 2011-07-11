@@ -76,7 +76,7 @@ function revisioning_permission() {
   $moderated_content_types = implode(', ', revisioning_moderated_content_types(FALSE));
   $publish_description = empty($moderated_content_types)
     ? t('Please select one or more content types for moderation by ticking the <em>New revision in draft, pending moderation</em> <strong>Publishing option</strong> at <em>Structure >> Content types >> edit</em>.')
-    : t('Applies only to content types that are subject to moderation, i.e.: %moderated_content_types.',
+    : t('Applies to content types that are subject to moderation, i.e.: %moderated_content_types.',
         array('%moderated_content_types' => $moderated_content_types));
 
   $permissions = array_merge($permissions, array(
@@ -89,11 +89,11 @@ function revisioning_permission() {
       'description' => t('Also requires edit permission from either the Node or other content access module(s).')
     ),
     'publish revisions' => array(
-      'title' => t('Publish content revisions'),
+      'title' => t("Publish content revisions (of anyone's content)"),
       'description' => $publish_description
     ),
     'unpublish current revision' => array(
-      'title' => t('Unpublish current revision'),
+      'title' => t("Unpublish current revision (of anyone's content)"),
       'description' => $publish_description
     )
   ));
@@ -106,8 +106,21 @@ function revisioning_permission() {
         'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)),
         'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
       $permissions['view revisions of any ' . $machine_name . ' content'] = array(
-        'title' => t('%type-name: View revisions of any content', array('%type-name' => $type->name)),
+        'title' => t("%type-name: View revisions of anyone's content", array('%type-name' => $type->name)),
         'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+  //    $permissions['edit revisions of own ' . $machine_name . ' content'] = array(
+  //      'title' => t('%type-name: Edit revisions of own content', array('%type-name' => $type->name)),
+  //      'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+  //    $permissions['edit revisions of any ' . $machine_name . ' content'] = array(
+  //      'title' => t('%type-name: Edit revisions of any content', array('%type-name' => $type->name)),
+  //      'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+      $permissions['publish revisions of own ' . $machine_name . ' content'] = array(
+        'title' => t('%type-name: Publish revisions of own content', array('%type-name' => $type->name)),
+        'description' => t('Applies only to %type-name content.', array('%type-name' => $type->name)));
+      $permissions['publish revisions of any ' . $machine_name . ' content'] = array(
+        'title' => t("%type-name: Publish revisions of anyone's content", array('%type-name' => $type->name)),
+        'description' => t('Applies only to %type-name content.', array('%type-name' => $type->name)));
+
     }
   }
   return $permissions;
@@ -653,6 +666,8 @@ function revisioning_views_api() {
 function revisioning_user_node_access($revision_op, $node) {
   global $user;
 
+  $type = check_plain($node->type);
+
   switch ($revision_op) {
     case 'view current':
       break;
@@ -662,7 +677,6 @@ function revisioning_user_node_access($revision_op, $node) {
       if (user_access('view revisions', $user)) {
         break;
       }
-      $type = check_plain($node->type);
       if (user_access('view revisions of any ' . $type . ' content', $user)) {
         break;
       }
@@ -679,6 +693,12 @@ function revisioning_user_node_access($revision_op, $node) {
       return user_access($revision_op, $user) ? 'update' : FALSE;
 
     case 'publish revisions':
+      if (user_access('publish revisions of any ' . $type . ' content', $user)) {
+        break;
+      }
+      if (($node->uid == $user->uid) && user_access('publish revisions of own ' . $type . ' content', $user)) {
+        break;
+      }
     case 'unpublish current revision':
       return user_access($revision_op, $user) ? 'view' : FALSE;
 
