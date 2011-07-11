@@ -44,7 +44,7 @@ class revisioning_handler_filter_node_state extends views_handler_filter_in_oper
     if (!empty($subclauses)) {
       $where_expression = implode(' OR ', $subclauses);
       if ($this->operator == 'not in') {
-        $where_expression = "!($where_expression)";
+        $where_expression = "not ($where_expression)";
       }
       $this->query->add_where_expression($this->options['group'], $where_expression);
     }

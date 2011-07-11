@@ -29,13 +29,12 @@ class revisioning_handler_filter_node_revision_moderation extends views_handler_
       }
     }
     else {
-      $where_expression = $this->table_alias . '.type IN (' . implode(',', $moderated_content_types) . ')';
-      if (reset($this->value) == REVISIONING_NOT_MODERATED) {
-        $where_expression = "!($where_expression)";
-      }
+      $moderated = (reset($this->value) == REVISIONING_MODERATED);
       if ($this->operator == 'not in') {
-        $where_expression = ($where_expression[0] == '!') ? drupal_substr($where_expression, 1) : "!($where_expression)";
+        $moderated = !$moderated;
       }
+      $where_operator = $moderated ? 'IN' : 'NOT IN';
+      $where_expression = $this->table_alias . '.type ' . $where_operator . ' ('. implode(',', $moderated_content_types) .')';
       $this->query->add_where_expression($this->options['group'], $where_expression);
     }
   }
