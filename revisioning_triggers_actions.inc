@@ -136,6 +136,12 @@ function revisioning_action_revision_trigger($revision, $hook) {
  */
 function revisioning_action_info() {
   $action_info = array(
+    'revisioning_delete_archived_action' => array(
+      'type' => 'node',
+      'label' => t('Delete archived revisions'),
+      'configurable' => FALSE,
+      'triggers' => array('node_update')
+    ),
     'revisioning_publish_latest_revision_action' => array(
       'type' => 'node',
       'label' => t('Publish the most recent pending revision'),
@@ -148,6 +154,33 @@ function revisioning_action_info() {
     )
   );
   return $action_info;
+}
+
+/**
+ * As declared in revisioning_action_info().
+ *
+ * Called from actions.inc/actions_do()
+ * @param $entity, in our case the node in question
+ * @param $context, an array with $context['hook'] telling us which trigger
+ *        instigated this call, eg 'node_update' as specified in the 'triggers'
+ *        array, in hook_action_info()
+ */
+function revisioning_delete_archived_action(&$entity, $context = array()) {
+  $node = $entity;
+  if (empty($node->revision_moderation)) {
+    // return;
+  }
+  $num_archived = revisioning_get_number_of_archived_revisions($node);
+  if ($num_archived > 0) {
+    $type = node_type_get_type($node->type);
+    watchdog('revisioning',
+      'Executing deleting archived revisions action for @type %title', array('@type' => $type->name, '%title' => $node->title),
+      WATCHDOG_NOTICE, l(t('view'), "node/$node->nid"));
+    if (revisioning_delete_archived_revisions($node)) {
+      revisioning_set_status_message(format_plural($num_archived, '@type %title: one archived revision deleted.', '@type %title: @count archived revisions deleted.',
+        array('@type' => $type->name, '%title' => $node->title)));
+    }
+  }
 }
 
 /**
