@@ -88,7 +88,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
           // Change the meaning of the 'Delete' button when editing a revision
           // to be the deletion of the viewed revision, rather than the node
           // node.
-          $form['actions']['delete']['#value'] = 'Delete this revision';
+          $form['actions']['delete']['#value'] = t('Delete this revision');
           $form['actions']['delete']['#submit'][] = '_revisioning_delete_submit';
         }
       }
