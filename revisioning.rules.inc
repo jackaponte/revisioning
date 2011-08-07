@@ -12,24 +12,37 @@
  * Implements hook_rules_condition_info().
  */
 function revisioning_rules_condition_info() {
-  return array(
-    'revisioning_node_has_pending' => array(
-      'label' => t('Content has pending revision'),
-      'arguments' => array(
-        'node' => array('type' => 'node', 'label' => t('Content'))
-      ),
-      'help' => t('Evaluates to TRUE, if the node has one or more pending revisions'),
-      'module' => 'revisioning',
+  $defaults = array(
+    'parameter' => array(
+      'node' => array('type' => 'node', 'label' => t('Content')),
     ),
-    'revisioning_condition_revision_is' => array(
-      'label' => t('Content revision is'),
-      'arguments' => array(
-        'node' => array('type' => 'node', 'label' => t('Content'))
-      ),
-      'help' => t('Evaluates to TRUE, if revision is one of selected types'),
-      'module' => 'revisioning',
-    ),
+    'group' => t('Revisioning'),
   );
+  $items['revisioning_node_has_pending'] = $defaults + array(
+    'label' => t('Content has pending revision'),
+    'help' => t('Evaluates to TRUE, if the node has one or more pending revisions'),
+    'module' => 'revisioning',
+  );
+  $items['revisioning_condition_revision_is'] = $defaults + array(
+    'label' => t('Content revision is'),
+    'help' => t('Evaluates to TRUE, if revision is one of selected types'),
+    'module' => 'revisioning',
+    'base' => 'revisioning_condition_revision_is'
+  );
+  $items['revisioning_condition_revision_is']['parameter']['revision_type'] = array(
+    'type' => 'list<text>',
+    'label' => t('Is one of'),
+    'options list' => 'revisioning_revision_states_all',
+    'description' => t('The content type(s) to check for.'),
+  );
+  return $items;
+}
+
+/**
+ * Wrapper function to always return all revisioning states
+ */
+function revisioning_revision_states_all() {
+  return revisioning_revision_states();
 }
 
 /*
@@ -44,21 +57,7 @@ function revisioning_node_has_pending($node, $settings) {
  */
 function revisioning_condition_revision_is($node, $settings) {
   $type = _revisioning_revision_is($node);
-  return in_array($type, $settings['revision_type']);
-}
-
-/*
- *  Check for content types - configuration form.
- */
-function revisioning_condition_revision_is_form($settings = array(), &$form) {
-  $form['settings']['revision_type'] = array(
-    '#type' => 'select',
-    '#title' => t('Is one of'),
-    '#options' => revisioning_revision_states(),
-    '#multiple' => TRUE,
-    '#default_value' => isset($settings['revision_type']) ? $settings['revision_type'] : array(),
-    '#required' => TRUE,
-  );
+  return in_array($type, $settings);
 }
 
 /**
