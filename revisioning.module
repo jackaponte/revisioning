@@ -73,11 +73,17 @@ function revisioning_permission() {
       'description' => ''))
     : array();
 
+  $edit_description = t('Also requires update permission from either the Node or other content access module(s).');
+
   $moderated_content_types = implode(', ', revisioning_moderated_content_types(FALSE));
   $publish_description = empty($moderated_content_types)
     ? t('Please select one or more content types for moderation by ticking the <em>New revision in draft, pending moderation</em> <strong>Publishing option</strong> at <em>Structure >> Content types >> edit</em>.')
     : t('Applies to content types that are subject to moderation, i.e.: %moderated_content_types.',
         array('%moderated_content_types' => $moderated_content_types));
+
+  if (!empty($moderated_content_types) && variable_get('revisioning_require_update_to_publish', FALSE)) {
+    $publish_description .= ' <br/>' . $edit_description;
+  }
 
   $permissions = array_merge($permissions, array(
     'view revision status messages' => array(
@@ -86,7 +92,7 @@ function revisioning_permission() {
     ),
     'edit revisions' => array(
       'title' => t('Edit content revisions'),
-      'description' => t('Also requires edit permission from either the Node or other content access module(s).')
+      'description' => $edit_description
     ),
     'publish revisions' => array(
       'title' => t("Publish content revisions (of anyone's content)"),
@@ -116,10 +122,10 @@ function revisioning_permission() {
   //      'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
       $permissions['publish revisions of own ' . $machine_name . ' content'] = array(
         'title' => t('%type-name: Publish revisions of own content', array('%type-name' => $type->name)),
-        'description' => t('Applies only to %type-name content.', array('%type-name' => $type->name)));
+        'description' => $publish_description);
       $permissions['publish revisions of any ' . $machine_name . ' content'] = array(
         'title' => t("%type-name: Publish revisions of anyone's content", array('%type-name' => $type->name)),
-        'description' => t('Applies only to %type-name content.', array('%type-name' => $type->name)));
+        'description' => $publish_description);
 
     }
   }
@@ -693,14 +699,21 @@ function revisioning_user_node_access($revision_op, $node) {
       return user_access($revision_op, $user) ? 'update' : FALSE;
 
     case 'publish revisions':
+      $node_op = variable_get('revisioning_require_update_to_publish', FALSE) ? 'update' : 'view';
+      if (user_access('publish revisions', $user)) {
+        return $node_op;
+      }
       if (user_access('publish revisions of any ' . $type . ' content', $user)) {
-        break;
+        return $node_op;
       }
       if (($node->uid == $user->uid) && user_access('publish revisions of own ' . $type . ' content', $user)) {
-        break;
+        return $node_op;
       }
+      return FALSE;
+
     case 'unpublish current revision':
-      return user_access($revision_op, $user) ? 'view' : FALSE;
+      $node_op = variable_get('revisioning_require_update_to_publish', FALSE) ? 'update' : 'view';
+      return user_access('unpublish current revision', $user) ? $node_op : FALSE;
 
     case 'delete revisions':
     case 'delete archived revisions':

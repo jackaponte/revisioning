@@ -33,6 +33,19 @@ function revisioning_admin_configure() {
     '#default_value' => variable_get('revisioning_edit_callback', REVISIONING_LOAD_CURRENT),
     '#description' => t('The first option represents default core behaviour.')
   );
+
+  $form['revisioning_publication_config'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configure publication options'),
+    '#description' => t('')
+  );
+  $form['revisioning_publication_config']['revisioning_require_update_to_publish'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Require update permission in order to publish or unpublish content.'),
+    '#default_value' => variable_get('revisioning_require_update_to_publish', TRUE),
+    '#description' => t('If you have enabled one or modules dealing with content access, then you would normally tick this box.')
+  );
+
   if (module_exists('taxonomy')) {
     $form['revisioning_display_options'] = array(
       '#type' => 'fieldset',
@@ -42,6 +55,7 @@ function revisioning_admin_configure() {
     $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
       '#type' => 'checkbox',
       '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),       '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
+      '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
       '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
     );
   }
