@@ -408,6 +408,7 @@ function _revisioning_publish_revision(&$node_revision) {
     ->fields(array(
       'vid' => $node_revision->vid,
       'title' => $node_revision->title,
+      'changed' => time(),
       'status' => NODE_PUBLISHED))
     ->condition('nid', $node_revision->nid)
     ->execute();
