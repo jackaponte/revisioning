@@ -330,6 +330,10 @@ function _revisioning_unpublish_node($nid_or_node) {
     ->condition('vid', $node->vid)
     ->execute();
 
+  // Update node_access table
+  $node->status = NODE_NOT_PUBLISHED;
+  node_access_acquire_grants($node);
+
   cache_clear_all(); // requried?
 }
 
@@ -425,7 +429,11 @@ function _revisioning_publish_revision(&$node_revision) {
     revisioning_update_taxonomy_index($node_revision);
   }
 
-  cache_clear_all(); // ? required ?
+  // Update node_access table
+  $node_revision->status = NODE_PUBLISHED;
+  node_access_acquire_grants($node_revision);
+
+  cache_clear_all(); // required?
 
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);

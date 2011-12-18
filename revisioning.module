@@ -566,6 +566,13 @@ function revisioning_node_update($node) {
     revisioning_update_taxonomy_index($node); // fix for [#962664]
   }
 
+  // Check whether the node has a current_status property and update the
+  // node->status to allow node_save()'s call to node_access_acquire_grants()
+  // to create the correct node_access entry for the current_status.
+  if (isset($node->current_status)) {
+    $node->status = $node->current_status;
+  }
+
   if (empty($node->revision_moderation)) {
     return;
   }
