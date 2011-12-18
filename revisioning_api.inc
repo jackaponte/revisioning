@@ -448,15 +448,19 @@ function _revisioning_publish_latest_revision(&$node) {
   // Get the latest pending revision
   $pending_revisions = _revisioning_get_pending_revisions($node->nid);
   $latest_pending = array_shift($pending_revisions);
-  // If there is no pending revision, take the current revision, provided it is
-  // NOT published
-  if (!$latest_pending && $node->is_current && !$node->status) {
-    _revisioning_publish_revision($node);
-    return TRUE;
-  }
   if ($latest_pending) {
     $node_revision = node_load($node->nid, $latest_pending->vid);
     _revisioning_publish_revision($node_revision);
+    return TRUE;
+  }
+  // If there is no pending revision, take the current revision, provided it is
+  // NOT published
+  if (empty($node->is_current)) {
+    $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
+    $node->is_current = revisioning_revision_is_current($node);
+  }
+  if (!$latest_pending && $node->is_current && !$node->status) {
+    _revisioning_publish_revision($node);
     return TRUE;
   }
   return FALSE;
