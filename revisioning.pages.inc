@@ -127,7 +127,7 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
     '#default_value' => (int)variable_get('revisioning_auto_publish_' . $content_type, FALSE),
-    '#description' => t('If this box is ticked and the logged-in user has one of the "Publish content revisions" permissions, then any draft of type %type is published immeditaley upon saving, without further review.', array('%type' => $content_type))
+    '#description' => t('If this box is ticked and the logged-in user has one of the "Publish content revisions" permissions, then any draft of type %type is published immediately upon saving, without further review.', array('%type' => $content_type))
   );
 }
 

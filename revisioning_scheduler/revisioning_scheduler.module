@@ -47,7 +47,7 @@ function revisioning_scheduler_form_alter(&$form, $form_state, $form_id) {
           'warning');
       }
       $form['revisioning_scheduler_date'] =  array(
-        '#title'         => 'Date for publication',
+        '#title'         => t('Date for publication'),
         '#type'          => 'textfield',
         '#description'   => t('Enter the date you want this revision to be published.'),
         '#maxlength'     => 10,
@@ -56,7 +56,7 @@ function revisioning_scheduler_form_alter(&$form, $form_state, $form_id) {
         '#weight'        => -1,
       );
       $form['revisioning_scheduler_time'] =  array(
-        '#title'         => 'Time for publication',
+        '#title'         => t('Time for publication'),
         '#type'          => 'textfield',
         '#maxlength'     => 5,
         '#size'          => 5,
