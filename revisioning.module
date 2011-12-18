@@ -513,11 +513,9 @@ function revisioning_node_presave($node) {
       // Follow the default saving process making this revision current and
       // published, as opposed to pending.
       unset($node->revision_moderation);
-    }
-    // This is not required for correct operation, as a revision becomes
-    // pending based on vid > current_revision_id. But it looks less confusing,
-    // if the "Published" box is in sync with the moderation radio buttons.
-    if ($auto_publish) {
+      // This is not required for correct operation, as a revision becomes
+      // pending based on vid > current_revision_id. But it looks less confusing,
+      // if the "Published" box is in sync with the moderation radio buttons.
       $node->status = NODE_PUBLISHED;
     }
   }
