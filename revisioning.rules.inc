@@ -49,13 +49,14 @@ function revisioning_revision_states_all() {
  * Condition: check for pending revisions of the node.
  */
 function revisioning_node_has_pending($node, $settings) {
-  return (_revisioning_get_number_of_pending_revisions($node->nid) > 0);
+  return _revisioning_get_number_of_pending_revisions($node->nid) > 0;
 }
 
 /*
  * Condition: check for pending revisions of the node.
  */
 function revisioning_condition_revision_is($node, $settings) {
+  revisioning_set_node_revision_info($node);
   $type = _revisioning_revision_is($node);
   return in_array($type, $settings);
 }
@@ -82,7 +83,7 @@ function revisioning_node_has_pending_label($settings, $argument_labels) {
  */
 function revisioning_rules_event_info() {
   $default = array(
-    'module' => 'revisioning',
+    'group' => 'revisioning',
     'arguments' =>  _revisioning_rules_event_arguments(),
     'redirect' => TRUE,
   );
@@ -187,7 +188,7 @@ function revisioning_events_argument_current_revision($node) {
  */
 function revisioning_rules_action_info() {
   $default = array(
-    'module' => 'revisioning',
+    'group' => 'revisioning',
   );
   return array(
     'revisioning_rules_action_publish_latest' => $default + array(
@@ -243,5 +244,5 @@ function revisioning_rules_action_load_current($node) {
  * Action: publish most recent pending revision.
  */
 function revisioning_rules_action_publish_latest($node) {
-  $published = _revisioning_publish_latest_revision($node);
+  _revisioning_publish_latest_revision($node);
 }
