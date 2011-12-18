@@ -15,7 +15,7 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
       return;
     }
     $revisions_table = $this->ensure_my_table();
-    $node_table = $this->query->ensure_table('node');
+    $node_table = $this->query->ensure_table('node', $this->relationship);
 
     $subclauses = array();
     foreach ($this->value as $state_code) {
