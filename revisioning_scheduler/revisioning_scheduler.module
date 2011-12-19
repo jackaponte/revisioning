@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Allows revisions to be published at a specified time and date.
+ * Allows revisions to be published at specified dates and times.
  *
  * @author Zombienaute (drupal.org),aka Adam Bramley <adam@catalyst.net.nz>
  * @author zepner (drupal.org)
@@ -220,7 +220,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
   if ($form['#node_edit_form']) {
 
     $js_file = drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js';
-    drupal_add_js($js_file, array('weight' => 2)); // after revision-radio.js
+    drupal_add_js($js_file);
 
     $date_format = variable_get('revisioning_scheduler_date_format');
     if (empty($date_format)) {
@@ -229,11 +229,12 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
     $form['revision_information']['publication_date'] = array(
       '#type' => 'textfield',
       '#size' => 25,
-      '#title' => t('Date and time for publication'),
+      '#maxlength' => 25,
+      '#title' => t('Optionally schedule a date and time to auto-publish this new revision'),
       '#description' => t('Please use this format: %format', array('%format' => $date_format)),
       '#default_value' => date($date_format),
       '#weight' => 10,
-      '#attributes' => array('class' => array('publication_date')),
+      '#attributes' => array('class' => array('publication-date')),
     );
   }
 }
