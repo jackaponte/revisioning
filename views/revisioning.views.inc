@@ -90,4 +90,18 @@ function revisioning_views_data_alter(&$data) {
     )
     // Cannot support sort as 'state' cannot be expressed as ORDER BY clause
   );
+  $data['node_revision']['latest'] = array(
+    'title' => t('Latest'),
+    'help' => t('Include only the most recent revisions.'),
+    'filter' => array(
+      'handler' => 'revisioning_handler_filter_revision_latest',
+    ),
+  );
+  $data['node_revision']['latest_published'] = array(
+    'title' => t('Latest published'),
+    'help' => t('Include only the most recent published revisions.'),
+    'filter' => array(
+      'handler' => 'revisioning_handler_filter_revision_latest_published',
+    ),
+  );
 }
