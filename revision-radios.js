@@ -18,7 +18,7 @@
       }
       else if (checked == 2) { // NEW_REVISION_WITH_MODERATION
         // Hide the "Published" check-box, as it does not apply in this mode
-        // because the new revision will always be unpublished. 
+        // because the new revision will always be unpublished.
         publishedDiv.hide();
         lastSummaryTab.text(lastSummaryTab.text().replace(textPublished, textNotPublished));
       }
