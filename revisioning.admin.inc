@@ -9,6 +9,7 @@
  * Menu callback for admin settings.
  */
 function revisioning_admin_configure() {
+
   $form['revisioning_view_and_edit_links'] = array(
     '#type' => 'fieldset',
     '#title' => t('Configure which revision is loaded when clicking on a view or edit link'),
@@ -59,5 +60,16 @@ function revisioning_admin_configure() {
       '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
     );
   }
+
+  $access_modules = module_implements('node_access');
+  $grants_modules = module_implements('node_grants');
+  $modules = array_merge($access_modules, $grants_modules);
+  $form['revisioning_display_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Additional info'),
+    '#description' => t('The following content access modules are enabled and may affect whether users can view, edit, delete or publish content:<br/>%modules.',
+      array('%modules' => empty($modules) ? t('none') : implode(', ', $modules)))
+  );
+
   return system_settings_form($form);
 }
