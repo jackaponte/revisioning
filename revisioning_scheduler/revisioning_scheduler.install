@@ -1,9 +1,8 @@
 <?php
 /**
   * @file
-  * Database schema for Revision Scheduler module.
+  * Database schema for Revisioning Scheduler module.
   */
-
 
 /**
  * Implements hook_schema().
@@ -34,3 +33,4 @@ function revisioning_scheduler_schema() {
 
   return $schema;
 }
+
