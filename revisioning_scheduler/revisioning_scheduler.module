@@ -12,14 +12,6 @@ define('REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT', 'd-m-Y H:i');
 define('REVISIONING_SCHEDULER_SLACK', 120);
 
 /**
- * Implements hook_permission().
- */
-function revisioning_scheduler_permission() {
-
-}
-
-
-/**
  *  Implements hook_menu().
  */
 function revisioning_scheduler_menu() {
