@@ -298,7 +298,7 @@ function revisioning_scheduler_cron() {
   );
   foreach ($result as $revision) {
     _revisioning_publish_revision(node_load($revision->revision_nid, $revision->revision_vid));
-    _revisioning_scheduler_unschedule_all_revisions($node->nid);
+    _revisioning_scheduler_unschedule_all_revisions($revision->revision_nid);
   }
 }
 
