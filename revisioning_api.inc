@@ -315,9 +315,12 @@ function _revisioning_revert_revision(&$node, $vid = NULL) {
  * Unpublish node, without calling node_save().
  *
  * @param $node
- *  Target $node object or nid of target node
+ *   Target $node object or nid of target node
+ * @param $clear_cache
+ *   Whether to clear the cache afterwards or not. Clearing the cache on every
+ *   node during bulk operations can be time-consuming.
  */
-function _revisioning_unpublish_node($nid_or_node) {
+function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
   $node = is_object($nid_or_node) ? $nid_or_node : node_load($nid_or_node);
 
   db_update('node')
@@ -330,11 +333,17 @@ function _revisioning_unpublish_node($nid_or_node) {
     ->condition('vid', $node->vid)
     ->execute();
 
-  // Update node_access table
   $node->status = NODE_NOT_PUBLISHED;
+
+  module_invoke_all('node_update', $node);
+  module_invoke_all('entity_update', $node, 'node');
+
+  // Update node_access table
   node_access_acquire_grants($node);
 
-  cache_clear_all(); // requried?
+  if ($clear_cache) {
+    cache_clear_all();
+  }
 }
 
 /**
@@ -378,8 +387,6 @@ function _revisioning_delete_revision(&$node, $vid = NULL) {
  *
  * @param $node
  *  Target $node object or nid of target node
- *
- * @TODO: Shouldn't we invoke hook_node_update() too, since we are updating node?
  */
 function _revisioning_unpublish_revision(&$node) {
   $node_revision = is_object($node) ? $node : node_load($node);
@@ -395,12 +402,13 @@ function _revisioning_unpublish_revision(&$node) {
  * Note that no check is made as to whether the initiating user has permission
  * to publish this revision.
  *
- * @param $node
+ * @param $node_revision
  *  Target $node object (loaded with target revision)
- * @param $vid
- *  optional vid of revision to make current, if provided $node is not object.
+ * @param $clear_cache
+ *   Whether to clear the cache afterwards or not. Clearing the cache on every
+ *   node during bulk operations can be time-consuming.
  */
-function _revisioning_publish_revision(&$node_revision) {
+function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
 
   $return = module_invoke_all('revisionapi', 'pre publish', $node_revision);
   if (in_array(FALSE, $return)) {
@@ -429,11 +437,17 @@ function _revisioning_publish_revision(&$node_revision) {
     revisioning_update_taxonomy_index($node_revision);
   }
 
-  // Update node_access table
   $node_revision->status = NODE_PUBLISHED;
+
+  module_invoke_all('node_update', $node_revision);
+  module_invoke_all('entity_update', $node_revision, 'node');
+
+  // Update node_access table
   node_access_acquire_grants($node_revision);
 
-  cache_clear_all(); // required?
+  if ($clear_cache) {
+    cache_clear_all();
+  }
 
   watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
   module_invoke_all('revisionapi', 'post publish', $node_revision);
@@ -464,13 +478,15 @@ function _revisioning_publish_latest_revision(&$node) {
   }
   // If there is no pending revision, take the current revision, provided it is
   // NOT published
-  if (empty($node->is_current)) {
-    $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
-    $node->is_current = revisioning_revision_is_current($node);
-  }
-  if (!$latest_pending && $node->is_current && !$node->status) {
-    _revisioning_publish_revision($node);
-    return TRUE;
+  if (!$node->status) {
+    if (!isset($node->is_current)) {
+      $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
+      $node->is_current = revisioning_revision_is_current($node);
+    }
+    if ($node->is_current) {
+      _revisioning_publish_revision($node);
+      return TRUE;
+    }
   }
   return FALSE;
 }
