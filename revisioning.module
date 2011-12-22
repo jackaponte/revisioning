@@ -452,20 +452,17 @@ function revisioning_node_presave($node) {
     $node->revision = ($node->revision_operation > NO_REVISION);
     $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
   }
-  if (!empty($node->revision_moderation)) {
 
-    $auto_publish = variable_get('revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node);
-    if ($auto_publish) {
-      revisioning_set_status_message(t('Auto-publishing this revision.'));
-      // Follow the default saving process making this revision current and
-      // published, as opposed to pending.
-      unset($node->revision_moderation);
-      // This is not required for correct operation, as a revision becomes
-      // pending based on vid > current_revision_id. But it looks less confusing,
-      // when the "Published" box is in sync with the moderation radio buttons.
-      $node->status = NODE_PUBLISHED;
-      $node->auto_publish = TRUE;
-    }
+  if (!empty($node->revision_moderation) && revisioning_user_may_auto_publish($node)) {
+    revisioning_set_status_message(t('Auto-publishing this revision.'));
+    // Follow the default saving process making this revision current and
+    // published, as opposed to pending.
+    unset($node->revision_moderation);
+    // This is not required for correct operation, as a revision becomes
+    // pending based on vid > current_revision_id. But it looks less confusing,
+    // when the "Published" box is in sync with the moderation radio buttons.
+    $node->status = NODE_PUBLISHED;
+    $node->auto_publish = TRUE;
   }
 
   if (!isset($node->nid)) { // new node

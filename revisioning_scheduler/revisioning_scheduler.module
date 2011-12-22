@@ -65,30 +65,31 @@ function revisioning_scheduler_admin_configure() {
  * Implements hook_form_BASEFORMID_alter().
  *
  * This function adds a publication date & time field to the Edit form.
- * It also loads a small javascript file, which controls visibilit of the field
+ * It also loads a small javascript file, which controls visibility of the field
  * in response to clicks on the revision moderation radio-buttons.
  */
 function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_id) {
 
   if (!empty($form['#node_edit_form']) && variable_get('revisioning_scheduler_on_edit_form', TRUE)) {
 
-    $node = $form_state['node'];
-
-    // Don't offer the form if auto-publish is enabled for this user
-    if (variable_get('revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node)) {
-      return;
-    }
-
     if (!user_access('administer nodes')) {
+      $node = $form_state['node'];
 
       // If the node is already published then scheduling a publication date is
       // inappropriate, unless the new revision goes into moderation.
       // The exception are users with 'administer nodes' permission, as they
-      // can change the Published checkbox and moderation radio buttons.
-      if ($node->status == NODE_PUBLISHED && $node->revision_operation != NEW_REVISION_WITH_MODERATION) {
+      // can change the Published checkbox and moderation radio buttons, so we
+      // have to deal with that client-side, see file revision-schedule.js
+      if ($node->status == NODE_PUBLISHED) {
         return;
       }
-      if (!revisioning_user_node_access('publish revisions', $node)) {
+      if (empty($node->revision_moderation) && !(empty($node->nid) && revisioning_content_is_moderated($node->type))) {
+        // No moderation specified and not a new node subject to moderation
+        return;
+      }
+      // Don't offer the form if auto-publish is enabled for this node and user,
+      // or if the user does not have permission to publish.
+      if (revisioning_user_may_auto_publish($node) || !revisioning_user_node_access('publish revisions', $node)) {
         return;
       }
     }
@@ -101,7 +102,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
       $date_format = REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT;
     }
     $description = t('Please use this format: %format. If you enter "now" or leave the current time this content will be published immediately.', array('%format' => $date_format))
-      . t('If you do not wish to publish the new revision, blank out this field.');
+      . ' ' . t('If you do not wish to publish the new revision, blank out this field.');
     $form['revision_information']['publication_date'] = array(
       '#type' => 'textfield',
       '#size' => 25,
@@ -232,8 +233,9 @@ function revisioning_scheduler_revisionapi($op, $node) {
  *
  * Called when saving, be it an edit or when creating a node.
  *
- * Picks up the value for the scheduled publication date (if entered) add
- * decides whether it is valid.
+ * Picks up the value for the scheduled publication date (if entered) and
+ * decides whether the node should be published immediately or scheduled for a
+ * later date.
  */
 function revisioning_scheduler_node_presave($node) {
   if (!empty($node->auto_publish)) {
@@ -260,6 +262,15 @@ function revisioning_scheduler_node_presave($node) {
   }
   // Publication date does not apply in this situation
   unset($node->publication_date);
+}
+
+/**
+ * Implements hook_node_insert().
+ *
+ * Called when a new node has just been created.
+ */
+function revisioning_scheduler_node_insert($node) {
+  revisioning_scheduler_node_update($node);
 }
 
 /**

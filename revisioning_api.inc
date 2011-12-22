@@ -152,6 +152,18 @@ function revisioning_content_is_moderated($content_type) {
   return !empty($content_type) && in_array('revision_moderation', variable_get('node_options_' . $content_type, array()));
 }
 
+/**
+ * Return whether the user has permission to auto-publish the supplied node.
+ *
+ * Auto-publish applies only for content types for which this feature has been
+ * activated on the content type form and only when "New revision in draft,
+ * pending moderation" is ticked also.
+ *
+ * @param $node
+ */
+function revisioning_user_may_auto_publish($node) {
+  return variable_get('revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node);
+}
 
 /**
  * Return a single or all possible revision state names.
