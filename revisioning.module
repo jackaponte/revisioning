@@ -286,59 +286,6 @@ function revisioning_menu() {
     //'tab_parent' => 'node/%/revisions',
     );
   }
-/*
-  $items['node/%node/restore-integrity'] = array(
-    'title' => 'Restore node revision data integrity',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('revision_integrity_restore_confirm'),
-    'access arguments' => array('administer nodes'),
-    'type' => MENU_CALLBACK,
-    'file' => 'revisioning.pages.inc',
-  );
-
-  if (module_exists('module_grants_monitor')) {
-    // Add a tab to the 'I created' tab (defined in module_grants_monitor.module)
-    $items['accessible-content/i-created/pending'] = array(
-      'title' => 'In draft/Pending publication',
-      'page callback' => '_revisioning_show_pending_nodes',
-      'page arguments' => array('view', I_CREATED),
-      'access callback' => 'revisioning_user_access_all',
-      'access arguments' => array(array('access I Created tab', 'access Pending tab')),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -1
-    );
-    // Add a tab to the 'I last modified' tab
-    $items['accessible-content/i-last-modified/pending'] = array(
-      'title' => 'In draft/Pending publication',
-      'page callback' => '_revisioning_show_pending_nodes',
-      'page arguments' => array('view', I_LAST_MODIFIED),
-      'access callback' => 'revisioning_user_access_al',
-      'access arguments' => array(array('access I Last Modified tab', 'access Pending tab')),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -1
-    );
-    // Add a tab to the 'I can edit' tab
-    $items['accessible-content/i-can-edit/pending'] = array(
-      'title' => 'In draft/Pending publication',
-      'page callback' => '_revisioning_show_pending_nodes',
-      'page arguments' => array('update'),
-      'access callback' => 'revisioning_user_access_all',
-      'access arguments' => array(array('access I Can Edit tab', 'access Pending tab')),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -1
-    );
-    // Add a tab to the 'I can view' tab (defined in module_grants.module)
-    $items['accessible-content/i-can-view/pending'] = array(
-      'title' => 'In draft/Pending publication',
-      'page callback' => '_revisioning_show_pending_nodes',
-      'page arguments' => array('view'),
-      'access callback' => 'revisioning_user_access_all',
-      'access arguments' => array(array('access I Can View tab', 'access Pending tab')),
-      'type' => MENU_LOCAL_TASK,
-      'weight' => -1
-    );
-  }
- */
   return $items;
 }
 
@@ -507,7 +454,7 @@ function revisioning_node_presave($node) {
   }
   if (!empty($node->revision_moderation)) {
 
-    $auto_publish = user_access('publish revisions') && variable_get('revisioning_auto_publish_' . $node->type, FALSE);
+    $auto_publish = variable_get('revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node);
     if ($auto_publish) {
       revisioning_set_status_message(t('Auto-publishing this revision.'));
       // Follow the default saving process making this revision current and
@@ -515,8 +462,9 @@ function revisioning_node_presave($node) {
       unset($node->revision_moderation);
       // This is not required for correct operation, as a revision becomes
       // pending based on vid > current_revision_id. But it looks less confusing,
-      // if the "Published" box is in sync with the moderation radio buttons.
+      // when the "Published" box is in sync with the moderation radio buttons.
       $node->status = NODE_PUBLISHED;
+      $node->auto_publish = TRUE;
     }
   }
 
