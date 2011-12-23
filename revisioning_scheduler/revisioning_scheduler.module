@@ -72,9 +72,8 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
 
   if (!empty($form['#node_edit_form']) && variable_get('revisioning_scheduler_on_edit_form', TRUE)) {
 
+    $node = $form_state['node'];
     if (!user_access('administer nodes')) {
-      $node = $form_state['node'];
-
       // If the node is already published then scheduling a publication date is
       // inappropriate, unless the new revision goes into moderation.
       // The exception are users with 'administer nodes' permission, as they
@@ -87,11 +86,13 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
         // No moderation specified and not a new node of a type subject to moderation
         return;
       }
-      // Don't offer the form if auto-publish is enabled for this node and user,
-      // or if the user does not have permission to publish.
-      if (revisioning_user_may_auto_publish($node) || !revisioning_user_node_access('publish revisions', $node)) {
+      if (!revisioning_user_node_access('publish revisions', $node)) {
         return;
       }
+    }
+    // Don't offer the form if auto-publish is enabled for this node and user.
+    if (revisioning_user_may_auto_publish($node)) {
+      return;
     }
 
     $js_file = drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js';
