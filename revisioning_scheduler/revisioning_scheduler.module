@@ -84,7 +84,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
         return;
       }
       if (empty($node->revision_moderation) && !(empty($node->nid) && revisioning_content_is_moderated($node->type))) {
-        // No moderation specified and not a new node subject to moderation
+        // No moderation specified and not a new node of a type subject to moderation
         return;
       }
       // Don't offer the form if auto-publish is enabled for this node and user,
@@ -221,7 +221,8 @@ function revisioning_scheduler_revisionapi($op, $node) {
       }
       $date = check_plain($_POST['revisioning_scheduler_date']);
       $time = check_plain($_POST['revisioning_scheduler_time']);
-      if (_revisioning_scheduler_schedule_publication($date, $time, $node)) {
+      $result = _revisioning_scheduler_schedule_publication($date, $time, $node);
+      if (isset($result)) {
         return FALSE; // this will abort the current publication operation
       }
       break;
@@ -282,9 +283,7 @@ function revisioning_scheduler_node_insert($node) {
 function revisioning_scheduler_node_update($node) {
   if (!empty($node->publication_date)) {
     $datetime = explode(' ', $node->publication_date);
-    $date = $datetime[0];
-    $time = isset($datetime[1]) ? $datetime[1] : '00:00';
-    $result = _revisioning_scheduler_schedule_publication($date, $time, $node);
+    _revisioning_scheduler_schedule_publication($datetime[0], $datetime[1], $node);
   }
 }
 
@@ -315,11 +314,21 @@ function revisioning_scheduler_cron() {
  * @param $node
  * @return
  *   TRUE: revision successfully scheduled
+ *   empty: revision not scheduled, should be published immediately
  *   FALSE: error, date & time in the past or database error
  */
 function _revisioning_scheduler_schedule_publication($date, $time, $node) {
+  $date = trim($date);
+  $time = trim($time);
+  if (empty($time)) {
+    $time = '00:00';
+  }
   $scheduled_time = strtotime($date . $time);
   if ($scheduled_time > time() - REVISIONING_SCHEDULER_SLACK) {
+    if ($scheduled_time <= time()) {
+      // Schedule immediately
+      return;
+    }
 
     _revisioning_scheduler_unschedule_all_revisions($node->nid);
 
@@ -334,6 +343,7 @@ function _revisioning_scheduler_schedule_publication($date, $time, $node) {
         drupal_set_message(t('Revision scheduled for publication at %time on %date.', array('%time' => $time, '%date' => $date)));
       }
       else {
+        // Should never get here
         drupal_set_message(t('Revision will be published at next cron run.'));
       }
       return TRUE;
