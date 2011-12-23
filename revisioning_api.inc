@@ -728,7 +728,11 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
   $node_query_result = db_query_range($sql, 0, $max);
   $revisions = array();
   foreach ($node_query_result as $revision) {
-    $filter = ($is_moderated < 0) || $is_moderated == revisioning_content_is_moderated($revision->type);
+    // Need to set revision_moderation for revisioning_node_access() to work properly
+    $revision->revision_moderation = revisioning_content_is_moderated($revision->type);
+
+    $filter = ($is_moderated < 0) || ($is_moderated == $revision->revision_moderation);
+
     if ($filter && _revisioning_access_node_revision($op, $revision)) {
       if (empty($revisions[$revision->vid])) {
         $revisions[$revision->vid] = $revision;
