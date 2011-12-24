@@ -135,11 +135,10 @@ function revisioning_scheduler_form_alter(&$form, $form_state, $form_id) {
       );
       $revision = $result->fetchAssoc();
       if (!empty($revision)) {
-        $user = user_load($revision['revision_uid']);
-        drupal_set_message(t('This revision was already scheduled by %username for publication on %date. You may override this date and time.',
+        drupal_set_message(t('This revision was already scheduled by !username for publication on %date. You may override this date and time.',
           array(
             '%date' => format_date($revision['revision_date']),
-            '%username' => $user->name
+            '!username' => theme('username', array('account' => user_load($revision['revision_uid'])))
           )),
           'warning', FALSE);
       }
@@ -333,10 +332,11 @@ function _revisioning_scheduler_schedule_publication($date, $time, $node) {
 
     _revisioning_scheduler_unschedule_all_revisions($node->nid);
 
+    global $user;
     $data = array(
       'revision_nid' => $node->nid,
       'revision_vid' => $node->vid,
-      'revision_uid' => isset($node->revision_uid) ? $node->revision_uid : $node->uid,
+      'revision_uid' => $user->uid,
       'revision_date' => $scheduled_time
     );
     if (drupal_write_record('revisioning_scheduler', $data)) {

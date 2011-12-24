@@ -24,7 +24,7 @@ function revisioning_scheduler_schema() {
         'type' => 'int',
         'not null' => TRUE),
       'revision_date' => array(
-        'description' => 'The date when this revision should be published',
+        'description' => 'The date when this revision will be published',
         'type' => 'int',
         'not null' => TRUE),
       ),
