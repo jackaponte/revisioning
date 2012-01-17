@@ -89,14 +89,14 @@ function revisioning_views_default_views() {
   $handler->display->display_options['header']['text']['field'] = 'area';
   $handler->display->display_options['header']['text']['empty'] = FALSE;
   $handler->display->display_options['header']['text']['content'] = 'Summary of site content';
-  $handler->display->display_options['header']['text']['format'] = '2';
+  $handler->display->display_options['header']['text']['format'] = 'filtered_html';
   /* No results behavior: Global: Text area */
   $handler->display->display_options['empty']['text']['id'] = 'area';
   $handler->display->display_options['empty']['text']['table'] = 'views';
   $handler->display->display_options['empty']['text']['field'] = 'area';
   $handler->display->display_options['empty']['text']['empty'] = FALSE;
   $handler->display->display_options['empty']['text']['content'] = 'No content matches your query.';
-  $handler->display->display_options['empty']['text']['format'] = '2';
+  $handler->display->display_options['empty']['text']['format'] = 'filtered_html';
   /* Field: Content: Nid */
   $handler->display->display_options['fields']['nid']['id'] = 'nid';
   $handler->display->display_options['fields']['nid']['table'] = 'node';
