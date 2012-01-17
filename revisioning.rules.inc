@@ -84,7 +84,7 @@ function revisioning_node_has_pending_label($settings, $argument_labels) {
 function revisioning_rules_event_info() {
   $default = array(
     'group' => 'revisioning',
-    'arguments' =>  _revisioning_rules_event_arguments(),
+    'variables' => _revisioning_rules_event_arguments(),
     'redirect' => TRUE,
   );
   $events = array(
