@@ -42,16 +42,11 @@ function revisioning_set_node_revision_info(&$node) {
     $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
     $node->is_current = revisioning_revision_is_current($node);
     $node->is_pending = _revisioning_node_is_pending($node);
-    // @todo RdB: Highly experimental fix for [#1393286].
-    // Support "Opt-in" of moderation upon loading of the node.
-    if (revisioning_get_latest_revision_id($node->nid) > $node->vid) {
-      $node->revision_moderation = TRUE;
-    }
   }
   // The revision_moderation flag may be overridden on the node edit form by
   // users with the "administer nodes" permission
   if (!isset($node->revision_moderation)) {
-    $node->revision_moderation = revisioning_content_is_moderated($node->type);
+    $node->revision_moderation = revisioning_content_is_moderated($node->type, $node);
   }
   //$node->uid and $node->revision_uid were already set in node_load()
   //$node->revision is set as part of 'prepare'-op, see node_object_prepare()
@@ -148,13 +143,21 @@ function revisioning_revision_is_current($node) {
  *
  * @param $content_type
  *  i.e. machine name, ie. $node->type
+ * @param $node
+ *  optional argument to implement "moderation opt-in" for nodes that are not
+ *  moderated by default (i.e by their content type).
  * @return
  *  TRUE, if the supplied type has the "New revision in draft, pending
  *  moderation" box ticked on the Structure>>Content types>>edit page
  *  (see Revisioning).
  */
-function revisioning_content_is_moderated($content_type) {
-  return !empty($content_type) && in_array('revision_moderation', variable_get('node_options_' . $content_type, array()));
+function revisioning_content_is_moderated($content_type, $node = NULL) {
+  $content_type_is_moderated = !empty($content_type) && in_array('revision_moderation', variable_get('node_options_' . $content_type, array()));
+  if (!$content_type_is_moderated && isset($node->nid) && isset($node->current_revision_id)) {
+    $latest_vid = revisioning_get_latest_revision_id($node->nid);
+    return $latest_vid > $node->current_revision_id;
+  }
+  return $content_type_is_moderated;
 }
 
 /**
@@ -734,7 +737,7 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
   $revisions = array();
   foreach ($node_query_result as $revision) {
     // Need to set revision_moderation for revisioning_node_access() to work properly
-    $revision->revision_moderation = revisioning_content_is_moderated($revision->type);
+    $revision->revision_moderation = revisioning_content_is_moderated($revision->type/*, $revision*/);
 
     $filter = ($is_moderated < 0) || ($is_moderated == $revision->revision_moderation);
 

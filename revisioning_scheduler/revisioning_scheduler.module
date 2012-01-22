@@ -82,7 +82,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
       if ($node->status == NODE_PUBLISHED) {
         return;
       }
-      if (empty($node->revision_moderation) && !(empty($node->nid) && revisioning_content_is_moderated($node->type))) {
+      if (empty($node->revision_moderation) && !(empty($node->nid) && revisioning_content_is_moderated($node->type, $node))) {
         // No moderation specified and not a new node of a type subject to moderation
         return;
       }
