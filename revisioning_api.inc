@@ -42,6 +42,11 @@ function revisioning_set_node_revision_info(&$node) {
     $node->current_revision_id = revisioning_get_current_node_revision_id($node->nid);
     $node->is_current = revisioning_revision_is_current($node);
     $node->is_pending = _revisioning_node_is_pending($node);
+    // @todo RdB: Highly experimental fix for [#1393286].
+    // Support "Opt-in" of moderation upon loading of the node.
+    if (revisioning_get_latest_revision_id($node->nid) > $node->vid) {
+      $node->revision_moderation = TRUE;
+    }
   }
   // The revision_moderation flag may be overridden on the node edit form by
   // users with the "administer nodes" permission
