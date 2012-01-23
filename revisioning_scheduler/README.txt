@@ -12,7 +12,7 @@ The publication date text field on the content edit form appears only when:
 o the user has publish or "administer content" permission for this piece of
   content
 o "Auto-publish drafts of type ..." is NOT ticked on the content type edit form
-  (or it is ticked, but the user doesn't have permission to publish)
+  (or it is ticked, but the user does not have permission to publish)
 o a) the node is currently not published yet (Published box NOT ticked), or
   b) if it is published, "Create new revision and moderate" IS ticked
      under "Publishing options".

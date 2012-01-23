@@ -95,24 +95,34 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
       return;
     }
 
-    $js_file = drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js';
-    drupal_add_js($js_file);
-
     $date_format = variable_get('revisioning_scheduler_date_format');
     if (empty($date_format)) {
       $date_format = REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT;
     }
-    $description = t('Please use this format: %format. If you enter "now" or leave the current time this content will be published immediately.', array('%format' => $date_format))
-      . ' ' . t('If you do not wish to publish the new revision, blank out this field.');
+    $description = t('Please use this format: %format, e.g %datetime. If you enter "now" this content will be published immediately.',
+      array('%format' => $date_format,'%datetime' => format_date(time(), 'custom', $date_format)))
+      . ' ' . t('If you do not wish to schedule publication, leave the field blank.');
+
+    if (isset($node->vid)) {
+      $result = db_query('SELECT * FROM {revisioning_scheduler} WHERE revision_vid = :vid',
+        array(':vid' => $node->vid)
+      );
+      $revision = $result->fetchAssoc();
+    }
+    $scheduled_datetime = empty($revision) ? '' : format_date($revision['revision_date'], 'custom', $date_format);
+
     $form['revision_information']['publication_date'] = array(
       '#type' => 'textfield',
       '#size' => 25,
       '#maxlength' => 25,
       '#title' => t('Optionally schedule a date and time for publication'),
       '#description' => $description,
-      '#default_value' => date($date_format),
+      '#default_value' => $scheduled_datetime,
       '#weight' => 10,
       '#attributes' => array('class' => array('publication-date')),
+    );
+    $form['#attached']['js'] = array(
+      drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js'
     );
   }
 }
@@ -239,15 +249,15 @@ function revisioning_scheduler_revisionapi($op, $node) {
  * later date.
  */
 function revisioning_scheduler_node_presave($node) {
-  if (!empty($node->auto_publish)) {
+  if (empty($node->revision_moderation) || !empty($node->auto_publish)) {
     _revisioning_scheduler_unschedule_all_revisions($node->nid);
   }
   elseif (!empty($node->publication_date)) {
-    $node->publication_date = trim($node->publication_date);
-    $datetime = explode(' ', $node->publication_date);
+    $datetime = explode(' ', trim($node->publication_date));
     $date = $datetime[0];
     $time = isset($datetime[1]) ? $datetime[1] : '00:00';
-    $scheduled_time = strtotime($date . $time);
+    $node->publication_date = "$date $time";
+    $scheduled_time = strtotime($node->publication_date);
     if ($date == 'now' || ($scheduled_time > time() - REVISIONING_SCHEDULER_SLACK && $scheduled_time <= time())) {
       // Publish immediately without scheduling.
       // Follow the default saving process making this revision current and
@@ -281,7 +291,10 @@ function revisioning_scheduler_node_insert($node) {
  * the new value.
  */
 function revisioning_scheduler_node_update($node) {
-  if (!empty($node->publication_date)) {
+  if (empty($node->publication_date)) {
+    _revisioning_scheduler_unschedule($node->vid);
+  }
+  else {
     $datetime = explode(' ', $node->publication_date);
     _revisioning_scheduler_schedule_publication($datetime[0], $datetime[1], $node);
   }
@@ -372,13 +385,13 @@ function _revisioning_scheduler_unschedule_all_revisions($nid) {
  *
  * @param
  *   $vid the unique revision id
- *
+ */
 function _revisioning_scheduler_unschedule($vid) {
   return db_delete('revisioning_scheduler')
     ->condition('revision_vid', $vid)
     ->execute();
 }
- */
+
 
 /**
  * Register View API information.
