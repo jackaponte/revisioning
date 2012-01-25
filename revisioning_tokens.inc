@@ -15,7 +15,7 @@ function revisioning_token_info() {
   $info['types']['revision'] = array(
     'name' => t("Revisions"),
     'description' => t('Tokens related to revisions of individual content items, or "node revisions".'),
-    'needs-data' => 'node',
+    'needs-data' => 'node'
   );
   // Then specify the tokens
   $info['tokens']['revision']['author'] = array(
@@ -38,7 +38,7 @@ function revisioning_token_info() {
   );
   $info['tokens']['revision']['vid'] = array(
     'name' => t("Revision ID"),
-    'description' => t("The unique ID of the revision"),
+    'description' => t("The unique ID of the revision")
   );
   return $info;
 }
@@ -49,8 +49,11 @@ function revisioning_token_info() {
 function revisioning_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
 
-  if ($type == 'revision' && !empty($data['revision'])) {
-    $revision = $data['revision'];
+  if ($type == 'revision' && !empty($data)) {
+    $revision = empty($data['revision']) ? $data['node'] : $data['revision'];
+    if (empty($revision)) {
+      return $replacements;
+    }
 
     foreach ($tokens as $name => $original) {
       switch ($name) {

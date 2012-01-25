@@ -1,9 +1,10 @@
 <?php
 
 /**
- * @file
- *  Rules integration for Revisioning module.
+ * @file Rules integration for Revisioning module.
  *
+ * @addtogroup rules
+ * @{
  */
 
 /*************************** Rules Conditions ********************************/
@@ -13,14 +14,14 @@
  */
 function revisioning_rules_condition_info() {
   $defaults = array(
+    'group' => t('Revisioning'),
     'parameter' => array(
       'node' => array('type' => 'node', 'label' => t('Content')),
     ),
-    'group' => t('Revisioning'),
   );
   $items['revisioning_node_has_pending'] = $defaults + array(
     'label' => t('Content has pending revision'),
-    'help' => t('Evaluates to TRUE, if the node has one or more pending revisions'),
+    'help' => t('Evaluates to TRUE, if the content has one or more pending revisions'),
     'module' => 'revisioning',
   );
   $items['revisioning_condition_revision_is'] = $defaults + array(
@@ -79,13 +80,14 @@ function revisioning_node_has_pending_label($settings, $argument_labels) {
 /************************** Rules Events **************************************/
 
 /**
- * Implements hook_rules_event_info().
+ * Implements hook_rules_event_info() on behalf of the Revisioning module.
  */
 function revisioning_rules_event_info() {
   $default = array(
-    'group' => 'revisioning',
+    'group' => t('Revisioning'),
+  //'module' => 'revisioning',
     'variables' => _revisioning_rules_event_arguments(),
-    'redirect' => TRUE,
+  //'redirect' => TRUE,
   );
   $events = array(
     'revisioning_post_unpublish' => $default + array(
@@ -98,7 +100,7 @@ function revisioning_rules_event_info() {
       'label' => t('Content has been reverted to revision'),
     ),
     'revisioning_pre_publish' => $default + array(
-      'label' => t('Node revision is going to be published'),
+      'label' => t('Content revision is going to be published'),
     ),
     'revisioning_pre_delete' => $default + array(
       'label' => t('Content revision is going to be deleted'),
@@ -148,38 +150,40 @@ function _revisioning_rules_event_arguments() {
 }
 
 /**
- * Current revision author argument handler.
- */
-function revisioning_events_argument_current_revision_author($node) {
-  $current_vid = revisioning_get_current_node_revision_id($node->nid);
-  $uid = $node->revision_uid;
-  if ($node->vid != $current_vid) {
-    $current = node_load($node->nid, $current_vid);
-    $uid = $current->revision_uid;
-  }
-  $user = user_load($uid);
-  return $user;
-}
-
-/**
- * Target revision author argument handler.
- */
-function revisioning_events_argument_target_revision_author($node) {
-  $user = user_load($node->revision_uid);
-  return $user;
-}
-
-/**
  * Current revision event argument handler.
  */
-function revisioning_events_argument_current_revision($node) {
-  $current_vid = revisioning_get_current_node_revision_id($node->nid);
+function revisioning_events_argument_current_revision($arguments, $name, $info) {
+  $node = $arguments['node'];
+  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return $current;
   }
   return $node;
 }
+
+/**
+ * Target revision author argument handler.
+ */
+function revisioning_events_argument_target_revision_author($arguments, $name, $info) {
+  $node = $arguments['node'];
+  return user_load($node->revision_uid);
+}
+
+/**
+ * Current revision author argument handler.
+ */
+function revisioning_events_argument_current_revision_author($arguments, $name, $info) {
+  $node = $arguments['node'];
+  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  $uid = $node->revision_uid;
+  if ($node->vid != $current_vid) {
+    $current = node_load($node->nid, $current_vid);
+    $uid = $current->revision_uid;
+  }
+  return user_load($uid);
+}
+
 
 /*************************** Rules Actions ************************************/
 
@@ -188,18 +192,18 @@ function revisioning_events_argument_current_revision($node) {
  */
 function revisioning_rules_action_info() {
   $default = array(
-    'group' => 'revisioning',
+    'group' => t('Revisioning'),
   );
   return array(
     'revisioning_rules_action_publish_latest' => $default + array(
       'label' => t('Publish the most recent pending revision'),
-      'arguments' => array(
+      'parameter' => array(
         'node' => array('type' => 'node', 'label' => t('content')),
       ),
     ),
     'revisioning_rules_action_load_current' => $default + array(
       'label' => t('Load current revision of content'),
-      'arguments' => array(
+      'parameter' => array(
         'node' => array('type' => 'node', 'label' => t('content')),
       ),
       'new variables' => array(
@@ -232,7 +236,7 @@ function revisioning_rules_loaded_current_label($settings, $argument_labels) {
  * Action: load current revision of provided node.
  */
 function revisioning_rules_action_load_current($node) {
-  $current_vid = revisioning_get_current_node_revision_id($node->nid);
+  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return array('loaded_current_revision' => $current);
@@ -246,3 +250,7 @@ function revisioning_rules_action_load_current($node) {
 function revisioning_rules_action_publish_latest($node) {
   _revisioning_publish_latest_revision($node);
 }
+
+/**
+ * @}
+ */

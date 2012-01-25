@@ -13,8 +13,8 @@ define('NO_REVISION', 0);
 define('NEW_REVISION_NO_MODERATTION', 1);
 define('NEW_REVISION_WITH_MODERATION', 2);
 
-define('REVISIONING_LOAD_CURRENT', 0); // node/%nid/view, node/%nid/edit opens current revision
-define('REVISIONING_LOAD_LATEST',  1); // node/%nid/view, node/%nid/edit opens latest revison
+define('REVISIONING_LOAD_CURRENT', 0); // node/%nid/view, node/%nid/edit open current revision
+define('REVISIONING_LOAD_LATEST',  1); // node/%nid/view, node/%nid/edit open latest revison
 
 define('NEW_REVISION_WHEN_NOT_PENDING', 0);
 define('NEW_REVISION_EVERY_SAVE', 1);
@@ -27,7 +27,11 @@ require_once drupal_get_path('module', 'revisioning') . '/revisioning.pages.inc'
 require_once drupal_get_path('module', 'revisioning') . '/revisioning_theme.inc';
 require_once drupal_get_path('module', 'revisioning') . '/revisioning_tokens.inc';
 require_once drupal_get_path('module', 'revisioning') . '/revisioning_triggers_actions.inc';
-// No need to include Rules integration file - Rules module does it for us automatically.
+if (module_exists('rules')) {
+  // This is not supposed to be necessary, but without it bad things happen
+  require_once drupal_get_path('module', 'revisioning') . '/revisioning.rules.inc';
+}
+
 
 /**
  * Implements hook_help().
