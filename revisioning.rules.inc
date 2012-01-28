@@ -21,12 +21,12 @@ function revisioning_rules_condition_info() {
   );
   $items['revisioning_node_has_pending'] = $defaults + array(
     'label' => t('Content has pending revision'),
-    'help' => t('Evaluates to TRUE, if the content has one or more pending revisions'),
+    'help' => t('Evaluates to TRUE, if the content has one or more pending revisions.'),
     'module' => 'revisioning',
   );
   $items['revisioning_condition_revision_is'] = $defaults + array(
-    'label' => t('Content revision is'),
-    'help' => t('Evaluates to TRUE, if revision is one of selected types'),
+    'label' => t('Content revision state'),
+    'help' => t('Evaluates to TRUE, if the revision is in one of the selected states.'),
     'module' => 'revisioning',
     'base' => 'revisioning_condition_revision_is'
   );
@@ -34,7 +34,7 @@ function revisioning_rules_condition_info() {
     'type' => 'list<text>',
     'label' => t('Is one of'),
     'options list' => 'revisioning_revision_states_all',
-    'description' => t('The content type(s) to check for.'),
+    'description' => t('The content state(s) to check for.'),
   );
   return $items;
 }
@@ -50,11 +50,12 @@ function revisioning_revision_states_all() {
  * Condition: check for pending revisions of the node.
  */
 function revisioning_node_has_pending($node, $settings) {
-  return _revisioning_get_number_of_pending_revisions($node->nid) > 0;
+  revisioning_set_node_revision_info($node);
+  return ($node->revision_moderation && $node->num_revisions == 1 && !$node->status) || ($num_pending = _revisioning_get_number_of_pending_revisions($node->nid)) > 0;
 }
 
 /*
- * Condition: check for pending revisions of the node.
+ * Condition: check revision state.
  */
 function revisioning_condition_revision_is($node, $settings) {
   revisioning_set_node_revision_info($node);
@@ -220,6 +221,7 @@ function revisioning_rules_action_info() {
 
 /**
  * Label callback for "revisioning_rules_action_load_current" action.
+ * @obsolete ?
  */
 function revisioning_rules_action_load_current_label($settings, $argument_labels) {
   return t('Load current revision of "@node"', $argument_labels);
@@ -227,6 +229,7 @@ function revisioning_rules_action_load_current_label($settings, $argument_labels
 
 /**
  * Label callback for "loaded_current_revision" variable.
+ * @obsolete ?
  */
 function revisioning_rules_loaded_current_label($settings, $argument_labels) {
   return t('Loaded current revision of "@node"', $argument_labels);
