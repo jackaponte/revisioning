@@ -59,6 +59,7 @@ function revisioning_node_has_pending($node, $settings) {
  */
 function revisioning_condition_revision_is($node, $settings) {
   revisioning_set_node_revision_info($node);
+  // Should we return FALSE here if $node->revision_moderation is not set?
   $type = _revisioning_revision_is($node);
   return in_array($type, $settings);
 }
@@ -68,7 +69,7 @@ function revisioning_condition_revision_is($node, $settings) {
  */
 function revisioning_condition_revision_is_label($settings, $argument_labels) {
   $names = array_intersect_key(revisioning_revision_states(), $settings['revision_type']);
-  return t('Revision status of @node is: @type', $argument_labels + array('@type' => implode(' or ', $names)));
+  return t('Revision status of @node is: @type', $argument_labels + array('@type' => implode(t(' or '), $names)));
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 /**
- * Menu callback for admin settings.
+ * Menu callback for admin configuration settings.
  */
 function revisioning_admin_configure() {
 
@@ -55,21 +55,60 @@ function revisioning_admin_configure() {
     );
     $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),       '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
+      '#title' => t('Where applicable add <strong>Tags</strong> and <strong>Terms</strong> columns to the content revisions summary (Revisions tab).'),
       '#default_value' => variable_get('revisioning_show_taxonomy_terms', TRUE),
       '#description' => t('These columns will only appear if some tags or terms have been assigned to the content shown.')
+    );
+    $form['revisioning_display_options']['revisioning_in_views_show_unpublished_content_terms'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('In Views show <strong>Tags</strong> and <strong>Terms</strong> associated with unpublished content (subject to permissions)'),
+      '#default_value' => variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE),
+      '#description' => t('Core behaviour is to suppress the display of tags and terms on all unpublished content regardless of permissions.')
     );
   }
 
   $access_modules = module_implements('node_access');
   $grants_modules = module_implements('node_grants');
   $modules = array_merge($access_modules, $grants_modules);
-  $form['revisioning_display_options'] = array(
+
+  $form['revisioning_additional_info'] = array(
     '#type' => 'fieldset',
     '#title' => t('Additional info'),
     '#description' => t('The following content access modules are enabled and may affect whether users can view, edit, delete or publish content:<br/>%modules.',
       array('%modules' => empty($modules) ? t('none') : implode(', ', $modules)))
   );
 
-  return system_settings_form($form);
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration')
+  );
+  $form['#submit'][] = 'revisioning_admin_configure_form_submit';
+
+  $form['#theme'] = 'system_settings_form';
+
+  return $form;
+}
+
+
+/**
+ * Execute the revisioning_admin_configure_form.
+ */
+function revisioning_admin_configure_form_submit($form, &$form_state) {
+  // Exclude unnecessary form elements.
+  form_state_values_clean($form_state);
+
+  foreach ($form_state['values'] as $key => $new_value) {
+    $old_value = variable_get($key);
+    if ($old_value != $new_value) {
+      variable_set($key, $new_value);
+      if ($key == 'revisioning_in_views_show_unpublished_content_terms') {
+        foreach (node_load_multiple(FALSE) as $node) {
+          revisioning_update_taxonomy_index($node, $new_value);
+        }
+      }
+    }
+  }
+
+  drupal_set_message(t('The revisioning configuration options have been saved.'));
 }

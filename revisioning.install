@@ -9,6 +9,11 @@
  * Implements hook_install().
  */
 function revisioning_install() {
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'revisioning')
+    ->execute();
+
   // Panels override fix, see http://drupal.org/node/519924.
   variable_set('page_manager_override_anyway', TRUE);
 }
@@ -31,4 +36,24 @@ function revisioning_uninstall() {
       variable_set($variable_name, $node_options);
     }
   }
+  // Make sure that unpublished nodes do not reveal their taxonomy terms, once
+  // Revisioning is uninstalled.
+  foreach (node_load_multiple(FALSE) as $node) {
+    // Modify node objects to be consistent with Revisioning being uninstalled,
+    // before updating the {taxonomy_index} table accordingly.
+    unset($node->revision_moderation);
+    revisioning_update_taxonomy_index($node, FALSE);
+  }
+}
+
+/**
+ * As of core 7.12 the new hooks taxonomy_node_insert() and
+ * taxonomy_node_update() must be executed before the associated revisioning
+ * hooks.
+ */
+function revisioning_update_7014() {
+  db_update('system')
+    ->fields(array('weight' => 1))
+    ->condition('name', 'revisioning')
+    ->execute();
 }

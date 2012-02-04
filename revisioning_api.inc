@@ -454,7 +454,7 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
     // Need to set up $node_revision correctly before calling
     // revisioning_update_taxonomy_index()
     $node_revision->current_revision_id = $node_revision->vid;
-    revisioning_update_taxonomy_index($node_revision);
+    revisioning_update_taxonomy_index($node_revision, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
   }
 
   $node_revision->status = NODE_PUBLISHED;
@@ -656,7 +656,7 @@ function revisioning_get_tids($vid) {
   $conditions = array('type' => 'taxonomy_term_reference');
   $fields = field_read_fields($conditions);
   foreach ($fields as $field => $data) {
-    $sql = "SELECT {$field}_tid AS tid FROM {field_revision_$field} WHERE revision_id = :vid AND entity_type = 'node' AND deleted = 0";
+    $sql = "SELECT {$field}_tid AS tid FROM {field_revision_$field} WHERE revision_id = :vid AND entity_type = 'node' AND deleted = 0 ORDER BY tid";
     $result = db_query($sql, array(':vid' => $vid));
     foreach ($result as $term) {
       $tids[] = $term->tid;

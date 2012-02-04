@@ -379,27 +379,46 @@ function vid_to_arg($arg, &$map, $index) {
  * @param $types
  */
 function revisioning_node_load($nodes, $types) {
+  // The 'taxonomy/term/%' menu callback taxonomy_term_page() selects nodes
+  // based on presence of their nids in the {taxonomy_index} table, which is
+  // mainly based on publication status. Revisioning also updates the table for
+  // unpublished content so that in Views we can see the terms belonging to
+  // published as well as unpublished content. As a result we must re-apply
+  // access control when taxonomy feeds are displayed.
+  // See also revisioning_update_taxonomy_index().
+  //
+  $double_check_access =
+    strpos($_GET['q'], 'taxonomy/term') === 0 &&
+    variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE);
+
   // At this point status, comment, promote and sticky have been set on all of
   // the $nodes according to the {node_revision} table (not the {node} table),
   // using {node.vid} as the foreign key into {node_revision}.
   $nodes_to_be_fixed = array();
   foreach ($nodes as $nid => $node) {
-    revisioning_set_node_revision_info($node);
-    if (!empty($node->revision_moderation) && !empty($node->is_current)) {
-      // Hack!
-      // Because of core issue [#1120272/#542290], if the current revision is
-      // loaded, $node fields may in fact be those belonging to LATEST revision.
-      // So reload with FIELD_LOAD_REVISION. We can rely on $node->vid, that
-      // attribute is set correctly.
-      // Make sure to unset the already loaded fields or we end up with 2 copies
-      // of each field, e.g. 2 bodies, 2 tags, 2 image attachments etc.
-      list($nid, $vid, $bundle) = entity_extract_ids('node', $node);
-      $instances = _field_invoke_get_instances('node', $bundle, array('deleted' => FALSE));
-      foreach ($instances as $instance) {
-        $field_name = $instance['field_name'];
-        unset($node->{$field_name});
+    if ($double_check_access && !node_access('view', $node)) {
+      // At this point we cannot remove the node object from $nodes,
+      // but we can set a flag to be checked in a later hook.
+      $node->dont_display = TRUE;
+    }
+    else {
+      revisioning_set_node_revision_info($node);
+      if (!empty($node->revision_moderation) && !empty($node->is_current)) {
+        // Hack!
+        // Because of core issue [#1120272/#542290], if the current revision is
+        // loaded, $node fields may in fact be those belonging to LATEST revision.
+        // So reload with FIELD_LOAD_REVISION. We can rely on $node->vid, that
+        // attribute is set correctly.
+        // Make sure to unset the already loaded fields or we end up with 2 copies
+        // of each field, e.g. 2 bodies, 2 tags, 2 image attachments etc.
+        list($nid, $vid, $bundle) = entity_extract_ids('node', $node);
+        $instances = _field_invoke_get_instances('node', $bundle, array('deleted' => FALSE));
+        foreach ($instances as $instance) {
+          $field_name = $instance['field_name'];
+          unset($node->{$field_name});
+        }
+        $nodes_to_be_fixed[$nid] = $node;
       }
-      $nodes_to_be_fixed[$nid] = $node;
     }
   }
   if (!empty($nodes_to_be_fixed)) {
@@ -407,6 +426,57 @@ function revisioning_node_load($nodes, $types) {
     foreach ($nodes_to_be_fixed as $nid => $node) {
       $nodes[$nid] = $node;
     }
+  }
+}
+
+/**
+ * Implements hook_preprocess_entity().
+ */
+function revisioning_preprocess_entity(&$variables) {
+  return;
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function revisioning_preprocess_node(&$variables) {
+  if (!empty($variables['dont_display'])) {
+    // $variables = array();
+  }
+}
+
+/**
+ * Implements hook_entity_prepare_view().
+ */
+function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
+  if ($entity_type == 'node') {
+    foreach($entities as $nid => $node) {
+      if (!empty($node->dont_display)) {
+        $node->title = FALSE;
+        $node->comment = FALSE;
+        $node->link = FALSE;
+        unset($node->body);
+        unset($node->rss_elements);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_attach_view_alter().
+ */
+function revisioning_field_attach_view_alter(&$output, $context) {
+  if ($context['entity_type'] == 'node' && !empty($context['entity']->dont_display)) {
+    $output = array();
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function revisioning_node_view($node, $view_mode, $langcode) {
+  if (!empty($node->dont_display)) {
+    $node->content = array();
   }
 }
 
@@ -510,10 +580,7 @@ function revisioning_node_presave($node) {
  */
 function revisioning_node_update($node) {
 
-  if ($node->status == NODE_NOT_PUBLISHED) {
-    // Published nodes will have been dealt with by taxonomy_field_update()
-    revisioning_update_taxonomy_index($node); // fix for [#962664]
-  }
+  revisioning_update_taxonomy_index($node, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
 
   // Check whether the node has a current_status property and update the
   // node->status to allow node_save()'s call to node_access_acquire_grants()
@@ -556,10 +623,7 @@ function revisioning_node_update($node) {
  */
 function revisioning_node_insert($node) {
 
-  if ($node->status == NODE_NOT_PUBLISHED) {
-    // Published nodes will have been dealt with by taxonomy_field_insert()
-    revisioning_update_taxonomy_index($node); // fix for [#962664]
-  }
+  revisioning_update_taxonomy_index($node, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
 
   if (!empty($node->revision_moderation)) {
     revisioning_set_status_message($node->status
@@ -571,35 +635,44 @@ function revisioning_node_insert($node) {
 
 
 /**
- * This is to assure that when content with terms is shown in a View, the
- * correct terms (those belonging to the current, rather than latest revision)
- * are displayed.
- *
- * Need to update the {taxonomy_index} table as Views relies on it.
- * Also a workaround for core bug [#962664].
+ * Updates the {taxonomy_index} table to assure that when content with terms is
+ * shown in a View, the correct terms (those belonging to the current, rather
+ * than latest revision) are displayed, regardless of whether the content is
+ * published or not.
+ * Revisioning's weight has been set higher than Taxonomy's so this is called
+ * after taxonomy_node_insert() or taxonomy_node_update().
+ * Called when creating, updating or (un)publishing a node.
  *
  * @param $node
+ * @param $show_unpublished_content_terms
  */
-function revisioning_update_taxonomy_index($node) {
+function revisioning_update_taxonomy_index($node, $show_unpublished_content_terms = TRUE) {
   if (module_exists('taxonomy') && variable_get('taxonomy_maintain_index_table', TRUE)) {
-    // Next line may have been executed in taxonomy_update_field(), but also
-    // needed for the case where an existing revision is published via
-    // _revisioning_publish_revision().
+    // First, delete all term id's associated with this node.
     db_delete('taxonomy_index')->condition('nid', $node->nid)->execute();
+    // taxonomy_delete_node_index($node); // requires core 7.12 or later
 
-    $vid = empty($node->revision_moderation) || empty($node->current_revision_id)
-      ? $node->vid : $node->current_revision_id;
-    $tids = revisioning_get_tids($vid);
-    $query = db_insert('taxonomy_index')->fields(array('nid', 'tid', 'sticky', 'created'));
-    foreach ($tids as $tid) {
-      $query->values(array(
-        'nid' => $node->nid,
-        'tid' => $tid,
-        'sticky' => $node->sticky,
-        'created' => $node->created,
-      ));
+    // Then add terms if the node is published OR terms are requested explicitly
+    if ($node->status || $show_unpublished_content_terms) {
+      $vid = empty($node->revision_moderation) || empty($node->current_revision_id)
+        ? $node->vid : $node->current_revision_id;
+      // Find all the terms attached to this node revision.
+      $tids = revisioning_get_tids($vid);
+      if (!empty($tids)) {
+        // Core, via taxonomy_node_update(), only does this when the node is published,
+        // but then we can't see the terms of unpublished content in Views!
+        $query = db_insert('taxonomy_index')->fields(array('nid', 'tid', 'sticky', 'created'));
+        foreach ($tids as $tid) {
+          $query->values(array(
+            'nid' => $node->nid,
+            'tid' => $tid,
+            'sticky' => $node->sticky,
+            'created' => $node->created,
+          ));
+        }
+        $query->execute();
+      }
     }
-    $query->execute();
   }
 }
 
@@ -615,8 +688,6 @@ function revisioning_views_api() {
 
 /**
  * Implements hook_user_node_access().
- *
- * @see module_grants_node_revision_access()
  *
  * @param $revision_op
  *   node or revision operation e.g. 'view revisions'
