@@ -452,11 +452,9 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
 
   if (empty($node_revision->is_current)) {
     // Need to set up $node_revision correctly before calling
-    // revisioning_update_taxonomy_index()
+    // revisioning_update_taxonomy_index(), via revisioning_node_update().
     $node_revision->current_revision_id = $node_revision->vid;
-    revisioning_update_taxonomy_index($node_revision, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
   }
-
   $node_revision->status = NODE_PUBLISHED;
 
   module_invoke_all('node_update', $node_revision);

@@ -430,27 +430,13 @@ function revisioning_node_load($nodes, $types) {
 }
 
 /**
- * Implements hook_preprocess_entity().
- */
-function revisioning_preprocess_entity(&$variables) {
-  return;
-}
-
-/**
- * Implements hook_preprocess_node().
- */
-function revisioning_preprocess_node(&$variables) {
-  if (!empty($variables['dont_display'])) {
-    // $variables = array();
-  }
-}
-
-/**
  * Implements hook_entity_prepare_view().
+ *
+ * First of the dont_display hooks.
  */
 function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
   if ($entity_type == 'node') {
-    foreach($entities as $nid => $node) {
+    foreach($entities as $node) {
       if (!empty($node->dont_display)) {
         $node->title = FALSE;
         $node->comment = FALSE;
@@ -476,7 +462,19 @@ function revisioning_field_attach_view_alter(&$output, $context) {
  */
 function revisioning_node_view($node, $view_mode, $langcode) {
   if (!empty($node->dont_display)) {
-    $node->content = array();
+    $node->content = array(); // suppress "Read more"
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ *
+ * Last of the dont_display hooks.
+ */
+function revisioning_preprocess_node(&$variables) {
+  if (!empty($variables['dont_display'])) {
+    //$variables = array();
+    return;
   }
 }
 
@@ -650,7 +648,7 @@ function revisioning_update_taxonomy_index($node, $show_unpublished_content_term
   if (module_exists('taxonomy') && variable_get('taxonomy_maintain_index_table', TRUE)) {
     // First, delete all term id's associated with this node.
     db_delete('taxonomy_index')->condition('nid', $node->nid)->execute();
-    // taxonomy_delete_node_index($node); // requires core 7.12 or later
+    // Use of taxonomy_delete_node_index($node); requires core 7.12 or later
 
     // Then add terms if the node is published OR terms are requested explicitly
     if ($node->status || $show_unpublished_content_terms) {

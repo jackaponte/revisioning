@@ -37,8 +37,7 @@ function revisioning_admin_configure() {
 
   $form['revisioning_publication_config'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Configure publication options'),
-    '#description' => t('')
+    '#title' => t('Publication options'),
   );
   $form['revisioning_publication_config']['revisioning_require_update_to_publish'] = array(
     '#type' => 'checkbox',
@@ -51,7 +50,6 @@ function revisioning_admin_configure() {
     $form['revisioning_display_options'] = array(
       '#type' => 'fieldset',
       '#title' => t('Display options'),
-      '#description' => t('')
     );
     $form['revisioning_display_options']['revisioning_show_taxonomy_terms'] = array(
       '#type' => 'checkbox',
@@ -61,9 +59,9 @@ function revisioning_admin_configure() {
     );
     $form['revisioning_display_options']['revisioning_in_views_show_unpublished_content_terms'] = array(
       '#type' => 'checkbox',
-      '#title' => t('In Views show <strong>Tags</strong> and <strong>Terms</strong> associated with unpublished content (subject to permissions)'),
+      '#title' => t('In feeds and Views, e.g. <em>/content-summary</em>, show <strong>Tags</strong> and <strong>Terms</strong> associated with unpublished content, subject to permissions'),
       '#default_value' => variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE),
-      '#description' => t('Core behaviour is to suppress the display of tags and terms on all unpublished content regardless of permissions.')
+      '#description' => t('Core behaviour is to suppress the display of tags and terms on all unpublished content even if the user has the permission.')
     );
   }
 

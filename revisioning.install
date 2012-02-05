@@ -37,7 +37,9 @@ function revisioning_uninstall() {
     }
   }
   // Make sure that unpublished nodes do not reveal their taxonomy terms, once
-  // Revisioning is uninstalled.
+  // Revisioning is uninstalled
+  require_once 'revisioning.module';
+
   foreach (node_load_multiple(FALSE) as $node) {
     // Modify node objects to be consistent with Revisioning being uninstalled,
     // before updating the {taxonomy_index} table accordingly.
@@ -51,7 +53,7 @@ function revisioning_uninstall() {
  * taxonomy_node_update() must be executed before the associated revisioning
  * hooks.
  */
-function revisioning_update_7014() {
+function revisioning_update_7104() {
   db_update('system')
     ->fields(array('weight' => 1))
     ->condition('name', 'revisioning')

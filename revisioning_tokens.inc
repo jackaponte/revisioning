@@ -54,26 +54,37 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
     if (empty($revision)) {
       return $replacements;
     }
-
+    $sanitize = !empty($options['sanitize']);
     foreach ($tokens as $name => $original) {
       switch ($name) {
 
         case 'title':
           $title = $revision->title;
-          $replacements[$original] = empty($options['sanitize']) ? $title : check_plain($title);
+          $replacements[$original] = $sanitize ? check_plain($title) : $title;
           break;
 
         case 'body':
           $text = $revision->body[$revision->language][0]['value'];
-          $replacements[$original] = empty($options['sanitize']) ? $text : $check_plan($text);
+          $replacements[$original] = $sanitize ? $check_plain($text) : $text;
           break;
 
         case 'vid':
           $replacements[$original] = $revision->vid;
           break;
+
+        // Default values for the chained tokens handled below.
+        case 'author':
+          $author = user_load($revision->revision_uid);
+          $name = format_username($author);
+          $replacements[$original] = $sanitize ? check_plain($name) : $name;
+          break;
+
+        case 'created':
+          $replacements[$original] = format_date($revision->created, 'medium', '', NULL, $revision->language);
+          break;
       }
     }
-    // Chained token relationships for revision author and revision timestamp
+    // Chained tokens for revision author and revision timestamp.
     // These fan out into sub-token fields, e.g author:name, author:mail etc.
     if ($author_tokens = token_find_with_prefix($tokens, 'author')) {
       $author = user_load($revision->revision_uid);

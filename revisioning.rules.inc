@@ -7,6 +7,112 @@
  * @{
  */
 
+/************************** Rules Events **************************************/
+
+/**
+ * Implements hook_rules_event_info() on behalf of the Revisioning module.
+ */
+function revisioning_rules_event_info() {
+  $default = array(
+    'group' => t('Revisioning'),
+  //'module' => 'revisioning',
+    'variables' => _revisioning_rules_event_arguments(),
+  //'redirect' => TRUE,
+  );
+  $events = array(
+    'revisioning_post_unpublish' => $default + array(
+      'label' => t('Content has been unpublished'),
+    ),
+    'revisioning_post_publish' => $default + array(
+      'label' => t('Pending revision has been published'),
+    ),
+    'revisioning_post_revert' => $default + array(
+      'label' => t('Content has been reverted to revision'),
+    ),
+    'revisioning_pre_publish' => $default + array(
+      'label' => t('Content revision is going to be published'),
+    ),
+    'revisioning_pre_delete' => $default + array(
+      'label' => t('Content revision is going to be deleted'),
+    ),
+    'revisioning_pre_revert' => $default + array(
+      'label' => t('Content is going to be reverted to revision'),
+    ),
+  );
+  return $events;
+}
+
+/**
+ * Returns arguments suitable for using it with a node.
+ */
+function _revisioning_rules_event_arguments() {
+  return array(
+    'node' => array(
+      'type' => 'node',
+      'label' => t('target revision of operation'),
+    ),
+    'current_revision' => array(
+      'type' => 'revision',
+      'label' => t('current revision of target content'),
+      'handler' => 'revisioning_events_argument_current_revision'
+    ),
+    'author' => array(
+      'type' => 'user',
+      'label' => t('content author'),
+      'handler' => 'rules_events_argument_node_author'
+    ),
+    'target_author' => array(
+      'type' => 'user',
+      'label' => t('target revision author'),
+      'handler' => 'revisioning_events_argument_target_revision_author'
+    ),
+    'current_author' => array(
+      'type' => 'user',
+      'label' => t('current revision author'),
+      'handler' => 'revisioning_events_argument_current_revision_author'
+    ),
+    'user' => array(
+      'type' => 'user',
+      'label' => t('acting user'),
+      'handler' => 'rules_events_argument_global_user'
+    ),
+  );
+}
+
+/**
+ * Current revision argument handler.
+ */
+function revisioning_events_argument_current_revision($arguments, $name, $info) {
+  $node = $arguments['node'];
+  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  if ($node->vid != $current_vid) {
+    $current = node_load($node->nid, $current_vid);
+    return $current;
+  }
+  return $node;
+}
+
+/**
+ * Target revision author argument handler.
+ */
+function revisioning_events_argument_target_revision_author($arguments, $name, $info) {
+  $node = $arguments['node'];
+  return user_load($node->revision_uid);
+}
+
+/**
+ * Current revision author argument handler.
+ */
+function revisioning_events_argument_current_revision_author($arguments, $name, $info) {
+  $node = $arguments['node'];
+  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  if ($node->vid != $current_vid) {
+    $current = node_load($node->nid, $current_vid);
+    return user_load($current->revision_uid);
+  }
+  return user_load($node->revision_uid);
+}
+
 /*************************** Rules Conditions ********************************/
 
 /*
@@ -78,114 +184,6 @@ function revisioning_condition_revision_is_label($settings, $argument_labels) {
 function revisioning_node_has_pending_label($settings, $argument_labels) {
   return t('Content "@node" has pending revision(s)', $argument_labels);
 }
-
-/************************** Rules Events **************************************/
-
-/**
- * Implements hook_rules_event_info() on behalf of the Revisioning module.
- */
-function revisioning_rules_event_info() {
-  $default = array(
-    'group' => t('Revisioning'),
-  //'module' => 'revisioning',
-    'variables' => _revisioning_rules_event_arguments(),
-  //'redirect' => TRUE,
-  );
-  $events = array(
-    'revisioning_post_unpublish' => $default + array(
-      'label' => t('Content has been unpublished'),
-    ),
-    'revisioning_post_publish' => $default + array(
-      'label' => t('Pending revision has been published'),
-    ),
-    'revisioning_post_revert' => $default + array(
-      'label' => t('Content has been reverted to revision'),
-    ),
-    'revisioning_pre_publish' => $default + array(
-      'label' => t('Content revision is going to be published'),
-    ),
-    'revisioning_pre_delete' => $default + array(
-      'label' => t('Content revision is going to be deleted'),
-    ),
-    'revisioning_pre_revert' => $default + array(
-      'label' => t('Content is going to be reverted to revision'),
-    ),
-  );
-  return $events;
-}
-
-/**
- * Returns arguments suitable for using it with a node.
- */
-function _revisioning_rules_event_arguments() {
-  return array(
-    'node' => array(
-      'type' => 'node',
-      'label' => t('target revision of operation'),
-    ),
-    'current_revision' => array(
-      'type' => 'node',
-      'label' => t('current revision of target content'),
-      'handler' => 'revisioning_events_argument_current_revision'
-    ),
-    'author' => array(
-      'type' => 'user',
-      'label' => t('content author'),
-      'handler' => 'rules_events_argument_node_author'
-    ),
-    'target_author' => array(
-      'type' => 'user',
-      'label' => t('target revision author'),
-      'handler' => 'revisioning_events_argument_target_revision_author'
-    ),
-    'current_author' => array(
-      'type' => 'user',
-      'label' => t('current revision author'),
-      'handler' => 'revisioning_events_argument_current_revision_author'
-    ),
-    'user' => array(
-      'type' => 'user',
-      'label' => t('acting user'),
-      'handler' => 'rules_events_argument_global_user'
-    ),
-  );
-}
-
-/**
- * Current revision event argument handler.
- */
-function revisioning_events_argument_current_revision($arguments, $name, $info) {
-  $node = $arguments['node'];
-  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
-  if ($node->vid != $current_vid) {
-    $current = node_load($node->nid, $current_vid);
-    return $current;
-  }
-  return $node;
-}
-
-/**
- * Target revision author argument handler.
- */
-function revisioning_events_argument_target_revision_author($arguments, $name, $info) {
-  $node = $arguments['node'];
-  return user_load($node->revision_uid);
-}
-
-/**
- * Current revision author argument handler.
- */
-function revisioning_events_argument_current_revision_author($arguments, $name, $info) {
-  $node = $arguments['node'];
-  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
-  $uid = $node->revision_uid;
-  if ($node->vid != $current_vid) {
-    $current = node_load($node->nid, $current_vid);
-    $uid = $current->revision_uid;
-  }
-  return user_load($uid);
-}
-
 
 /*************************** Rules Actions ************************************/
 
