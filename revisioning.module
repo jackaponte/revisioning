@@ -664,7 +664,7 @@ function revisioning_update_taxonomy_index($node, $show_unpublished_content_term
           $query->values(array(
             'nid' => $node->nid,
             'tid' => $tid,
-            'sticky' => $node->sticky,
+            'sticky' => empty($node->sticky) ? 0 : 1, // [#1417658]
             'created' => $node->created,
           ));
         }
