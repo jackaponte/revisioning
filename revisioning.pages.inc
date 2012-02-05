@@ -385,8 +385,7 @@ function revisioning_block_configure($delta = 'pending') {
     '#type' => 'textfield',
     '#title' => t('Page to go to when the block title is clicked'),
     '#default_value' => variable_get('revisioning_content_summary_page', ''),
-    '#description' => t('When left blank this will default to %accessible_content, provided Module Grants Montior is enabled and the user has sufficient permissions. Otherwise %view_content or %admin_content will be used, subject to permissions.<br/>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
-      '%accessible_content' => 'accessible-content',
+    '#description' => t('When left blank this will default to either %view_content, if the Views module is enabled, or %admin_content, subject to permissions.<br/>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
       '%view_content' => 'content-summary',
       '%admin_content' => 'admin/content'))
   );

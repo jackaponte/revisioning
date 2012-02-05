@@ -296,8 +296,7 @@ function revisioning_menu() {
 /**
  * Implements hook_menu_alter().
  *
- * Modify menu items defined in other modules (in particular the Node and
- * Module Grants modules).
+ * Modify menu items defined in other modules (in particular the Node module).
  */
 function revisioning_menu_alter(&$items) {
 
