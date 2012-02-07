@@ -186,8 +186,8 @@ function theme_revisioning_revisions_summary($variables) {
 
   // Set up the table rows
   $rows = array();
-  $revision_ids = element_children($form['info']);
 
+  $revision_ids = element_children($form['info']);
   $show_diff = count($revision_ids) >= 2 && module_exists('diff');
 
   // Set up the table header
