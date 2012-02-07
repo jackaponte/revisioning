@@ -218,10 +218,10 @@ function theme_revisioning_revisions_summary($variables) {
 
     // columns #3 & #4: Tags & Terms
     if (isset($form['tags'])) {
-      $row[] = drupal_render($form['tags'][$vid]);
+      $row[] = filter_xss(drupal_render($form['tags'][$vid]));
     }
     if (isset($form['term'])) {
-      $row[] = drupal_render($form['term'][$vid]);
+      $row[] = filter_xss(drupal_render($form['term'][$vid]));
     }
 
     // column #4: Publication status
