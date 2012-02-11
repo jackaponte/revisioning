@@ -98,8 +98,8 @@ function revisioning_views_data_alter(&$data) {
     ),
   );
   $data['node_revision']['latest_published'] = array(
-    'title' => t('Latest published'),
-    'help' => t('Include only the most recent published revisions.'),
+    'title' => t('Published'),
+    'help' => t('Include only currently published revisions.'),
     'filter' => array(
       'handler' => 'revisioning_handler_filter_revision_latest_published',
     ),

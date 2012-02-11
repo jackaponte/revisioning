@@ -1,17 +1,33 @@
 <?php
 /**
  * @file
- *   Views filter override to filter on revision recency, i.e. whether this is
- *   the latest published revision of a node or not.
+ *   Views filter override to filter on whether this is the latest published
+ *   revision of a node or not.
  */
-class revisioning_handler_filter_revision_latest_published extends views_handler_filter {
+class revisioning_handler_filter_revision_latest_published extends views_handler_filter_boolean_operator {
 
   function construct() {
     parent::construct();
+    $this->value_value = t('Revisions');
   }
 
   function access() {
     return user_access('access content');
+  }
+
+  function can_expose() {
+    return TRUE;
+  }
+
+  function expose_form(&$form, &$form_state) {
+    $form['expose']['required'] = array(
+      '#type' => 'value',
+      '#value' => FALSE,
+    );
+  }
+
+  function get_value_options() {
+    $this->value_options = array(1 => t('Published only'));
   }
 
   /**
@@ -21,13 +37,8 @@ class revisioning_handler_filter_revision_latest_published extends views_handler
     $revisions_table = $this->ensure_my_table();
     $node_table = $this->query->ensure_table('node');
 
-    // The subquery selects the maximum revision ID (vid) for a given node ID
-    // (nid). This is guaranteed to be the latest revision, because vids are
-    // assigned chronologically. Status is used to select only revisions that
-    // are published.
-    $max_vid_subquery = "SELECT MAX(vid) FROM $revisions_table WHERE $revisions_table.nid = $node_table.nid AND $revisions_table.status=1";
+    $where_clause = "$node_table.vid = $revisions_table.vid AND $node_table.status=1";
 
-    $where_clause = "$revisions_table.vid = ($max_vid_subquery)";
     $this->query->add_where_expression($this->options['group'], $where_clause);
   }
 }

@@ -16,6 +16,14 @@ function revisioning_install() {
 
   // Panels override fix, see http://drupal.org/node/519924.
   variable_set('page_manager_override_anyway', TRUE);
+
+  // If requested, not yet published and unpublished nodes need to reveal their
+  // taxonomy terms in Views and in feeds (subject to permissions).
+  if (module_exists('taxonomy') && variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE)) {
+    foreach (node_load_multiple(FALSE) as $node) {
+      revisioning_update_taxonomy_index($node, TRUE);
+    }
+  }
 }
 
 /**
@@ -38,13 +46,15 @@ function revisioning_uninstall() {
   }
   // Make sure that unpublished nodes do not reveal their taxonomy terms, once
   // Revisioning is uninstalled
-  require_once 'revisioning.module';
+  if (module_exists('taxonomy')) {
+    require_once 'revisioning.taxonomy.inc';
 
-  foreach (node_load_multiple(FALSE) as $node) {
-    // Modify node objects to be consistent with Revisioning being uninstalled,
-    // before updating the {taxonomy_index} table accordingly.
-    unset($node->revision_moderation);
-    revisioning_update_taxonomy_index($node, FALSE);
+    foreach (node_load_multiple(FALSE) as $node) {
+      // Modify node objects to be consistent with Revisioning being uninstalled,
+      // before updating the {taxonomy_index} table accordingly.
+      unset($node->revision_moderation);
+      revisioning_update_taxonomy_index($node, FALSE);
+    }
   }
 }
 

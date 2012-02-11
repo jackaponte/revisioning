@@ -2,16 +2,32 @@
 /**
  * @file
  *   Views filter override to filter on revision recency, i.e. whether this is
- *   the latest revision of a node or not.
+ *   the latest revision of a node or not, regardless of its published status.
  */
-class revisioning_handler_filter_revision_latest extends views_handler_filter {
+class revisioning_handler_filter_revision_latest extends views_handler_filter_boolean_operator {
 
   function construct() {
     parent::construct();
+    $this->value_value = t('Revisions');
   }
 
   function access() {
     return user_access('access content');
+  }
+
+  function can_expose() {
+    return TRUE;
+  }
+
+  function expose_form(&$form, &$form_state) {
+    $form['expose']['required'] = array(
+      '#type' => 'value',
+      '#value' => FALSE,
+    );
+  }
+
+  function get_value_options() {
+    $this->value_options = array(1 => t('Latest only'));
   }
 
   /**

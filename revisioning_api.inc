@@ -388,10 +388,6 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
 function _revisioning_delete_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
   module_invoke_all('revisionapi', 'pre delete', $node_revision);
-/*
-  db_query("DELETE FROM {node_revision} WHERE vid = :vid", array(
-    ':vid' => $node_revision->vid)
-  );*/
   db_delete('node_revision')
     ->condition('vid', $node_revision->vid)
     ->execute();
@@ -641,26 +637,6 @@ function revisioning_moderated_content_types($machine_name = TRUE) {
     }
   }
   return $moderated_content_types;
-}
-
-/**
- * Return an array of all the taxonomy term ids belonging to the supplied node
- * revision.
- *
- * @param int $vid
- */
-function revisioning_get_tids($vid) {
-  $tids = array();
-  $conditions = array('type' => 'taxonomy_term_reference');
-  $fields = field_read_fields($conditions);
-  foreach ($fields as $field => $data) {
-    $sql = "SELECT {$field}_tid AS tid FROM {field_revision_$field} WHERE revision_id = :vid AND entity_type = 'node' AND deleted = 0 ORDER BY tid";
-    $result = db_query($sql, array(':vid' => $vid));
-    foreach ($result as $term) {
-      $tids[] = $term->tid;
-    }
-  }
-  return $tids;
 }
 
 define('NO_FILTER', '-1');
