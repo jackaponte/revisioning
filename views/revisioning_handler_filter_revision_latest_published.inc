@@ -1,8 +1,8 @@
 <?php
 /**
  * @file
- *   Views filter override to filter on whether this is the latest published
- *   revision of a node or not.
+ *   Views filter to display in a 'Content revisions' view only the latest
+ *   revision of each node. Does not work in a standard 'Content' view.
  */
 class revisioning_handler_filter_revision_latest_published extends views_handler_filter_boolean_operator {
 
