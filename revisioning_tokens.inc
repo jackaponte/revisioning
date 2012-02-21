@@ -65,7 +65,7 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
 
         case 'body':
           $text = $revision->body[$revision->language][0]['value'];
-          $replacements[$original] = $sanitize ? $check_plain($text) : $text;
+          $replacements[$original] = $sanitize ? check_plain($text) : $text;
           break;
 
         case 'vid':
