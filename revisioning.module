@@ -587,10 +587,8 @@ function revisioning_node_update($node) {
     $node->status = $node->current_status;
   }
 
-  if (empty($node->revision_moderation)) {
-    return;
-  }
-  if (isset($node->revision_condition) || !empty($node->revision)) { // enter when revision_condition=0,1
+  if (!empty($node->revision_moderation) && (isset($node->revision_condition) || !empty($node->revision))) {
+    // Enter when revision moderation is on and revision_condition=0,1
     // Have to do this due to D7's "sick" denormalisation of node revision data.
     // Resetting the fields duplicated from new {node_revision} back to their
     // originial values to match the current revision as opposed to the latest
@@ -612,6 +610,8 @@ function revisioning_node_update($node) {
       ->condition('nid', $node->nid)
       ->execute();
   }
+  // Generate a 'post update' event in Rules
+  module_invoke_all('revisionapi', 'post update', $node);
 }
 
 /**

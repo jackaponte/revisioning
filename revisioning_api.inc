@@ -225,6 +225,12 @@ function _revisioning_node_is_pending($node) {
 function revisioning_revisionapi($op, $node) {
   switch ($op) {
 
+    case 'post update':
+      if (module_exists('rules')) {
+        rules_invoke_event('revisioning_post_update', $node);
+      }
+      break;
+
     case 'pre publish':
       if (module_exists('rules')) {
         rules_invoke_event('revisioning_pre_publish', $node);
@@ -232,7 +238,7 @@ function revisioning_revisionapi($op, $node) {
       break;
 
     case 'post publish': // called from _revisioning_publish_revision
-      // Invoke hook_revision_publish() triggers passing the node as an arg
+      // Invoke hook_revision_publish() triggers, passing the node as argument.
       module_invoke_all('revision_publish', $node);
 
       if (module_exists('rules')) {

@@ -20,23 +20,27 @@ function revisioning_rules_event_info() {
   //'redirect' => TRUE,
   );
   $events = array(
-    'revisioning_post_unpublish' => $default + array(
-      'label' => t('Content has been unpublished'),
+    'revisioning_post_update' => $default + array(
+      'label' => t('Content revision has been updated'),
+    ),
+
+    'revisioning_pre_publish' => $default + array(
+      'label' => t('Content revision is going to be published'),
     ),
     'revisioning_post_publish' => $default + array(
       'label' => t('Pending revision has been published'),
     ),
+    'revisioning_pre_revert' => $default + array(
+      'label' => t('Content is going to be reverted to revision'),
+    ),
     'revisioning_post_revert' => $default + array(
       'label' => t('Content has been reverted to revision'),
     ),
-    'revisioning_pre_publish' => $default + array(
-      'label' => t('Content revision is going to be published'),
+    'revisioning_post_unpublish' => $default + array(
+      'label' => t('Content has been unpublished'),
     ),
     'revisioning_pre_delete' => $default + array(
       'label' => t('Content revision is going to be deleted'),
-    ),
-    'revisioning_pre_revert' => $default + array(
-      'label' => t('Content is going to be reverted to revision'),
     ),
   );
   return $events;
