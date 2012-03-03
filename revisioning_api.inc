@@ -344,7 +344,9 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
   $node = is_object($nid_or_node) ? $nid_or_node : node_load($nid_or_node);
 
   db_update('node')
-    ->fields(array('status' => NODE_NOT_PUBLISHED))
+    ->fields(array(
+      'changed' => time(),
+      'status' => NODE_NOT_PUBLISHED))
     ->condition('nid', $node->nid)
     ->execute();
 
@@ -355,6 +357,13 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
 
   $node->status = NODE_NOT_PUBLISHED;
 
+  // Make sure the alias, if present, is not changed when unpublishing.
+  if (!isset($node->path['pathauto'])) {
+    $node->path = array(
+      'alias' => '',      // so that path_node_update() does nothing
+      'pathauto' => FALSE // so that pathauto_node_update() does nothing
+    );
+  }
   module_invoke_all('node_update', $node);
   module_invoke_all('entity_update', $node, 'node');
 
@@ -453,6 +462,13 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
   }
   $node_revision->status = NODE_PUBLISHED;
 
+  // Make sure the alias, if present, is not changed when publishing.
+  if (!isset($node_revision->path['pathauto'])) {
+    $node_revision->path = array(
+      'alias' => '',      // so that path_node_update() does nothing
+      'pathauto' => FALSE // so that pathauto_node_update() does nothing
+    );
+  }
   module_invoke_all('node_update', $node_revision);
   module_invoke_all('entity_update', $node_revision, 'node');
 

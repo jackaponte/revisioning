@@ -105,3 +105,7 @@ function revisioning_views_data_alter(&$data) {
     ),
   );
 }
+
+function revisioning_views_query_alter(&$view, &$query) {
+  return;
+}
