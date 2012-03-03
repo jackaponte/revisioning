@@ -605,7 +605,7 @@ function _revisioning_node_info_msg($node) {
     '@content_type' => $node->type,
     '%title' => $node->title,
     '!author' => theme('username', array('account' => $revision_author)),
-    '@date' => format_date($node->revision_timestamp, 'small'),
+    '@date' => format_date($node->revision_timestamp, 'short'),
   );
   $revision_type = _revisioning_revision_is($node);
   switch ($revision_type) {

@@ -61,7 +61,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
 
     // First column: saved date + author
     $first_cell = t('Saved !date by !username',
-      array('!date' => l(format_date($revision->timestamp, 'small'), "$base_url/view"),
+      array('!date' => l(format_date($revision->timestamp, 'short'), "$base_url/view"),
             '!username' => theme('username', array('account' => $revision))))
       . (empty($revision->log) ? '' : '<p class="revision-log">' . filter_xss($revision->log) . '</p>');
     $form['info'][$vid] = array(
