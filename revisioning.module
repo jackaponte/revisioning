@@ -114,11 +114,9 @@ function revisioning_permission() {
     $machine_name = check_plain($type->type);
     if (revisioning_content_is_moderated($machine_name)) {
       $permissions['view revisions of own ' . $machine_name . ' content'] = array(
-        'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)),
-        'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+        'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)));
       $permissions['view revisions of any ' . $machine_name . ' content'] = array(
-        'title' => t("%type-name: View revisions of anyone's content", array('%type-name' => $type->name)),
-        'description' => t('Grants access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
+        'title' => t("%type-name: View revisions of anyone's content", array('%type-name' => $type->name)));
   //    $permissions['edit revisions of own ' . $machine_name . ' content'] = array(
   //      'title' => t('%type-name: Edit revisions of own content', array('%type-name' => $type->name)),
   //      'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
@@ -126,11 +124,9 @@ function revisioning_permission() {
   //      'title' => t('%type-name: Edit revisions of any content', array('%type-name' => $type->name)),
   //      'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
       $permissions['publish revisions of own ' . $machine_name . ' content'] = array(
-        'title' => t('%type-name: Publish revisions of own content', array('%type-name' => $type->name)),
-        'description' => $publish_description);
+        'title' => t('%type-name: Publish revisions of own content', array('%type-name' => $type->name)));
       $permissions['publish revisions of any ' . $machine_name . ' content'] = array(
-        'title' => t("%type-name: Publish revisions of anyone's content", array('%type-name' => $type->name)),
-        'description' => $publish_description);
+        'title' => t("%type-name: Publish revisions of anyone's content", array('%type-name' => $type->name)));
 
     }
   }
@@ -806,16 +802,12 @@ function _revisioning_access_node_revision($revision_op, $node) {
   if (!_revisioning_operation_appropriate($revision_op, $node)) {
     return FALSE;
   }
-  if (module_exists('module_grants')) {
-    $access = module_grants_node_revision_access($revision_op, $node);
-  }
-  else {
-    // Check the revision-aspect of the operation
-    $node_op = revisioning_user_node_access($revision_op, $node);
-    // ... then check with core to assess node permissions
-    // node_access will invoke hook_node_access(), i.e. revisioning_node_access().
-    $access = $node_op && node_access($node_op, $node);
-  }
+  // Check the revision-aspect of the operation
+  $node_op = revisioning_user_node_access($revision_op, $node);
+  // ... then check with core to assess node permissions
+  // node_access will invoke hook_node_access(), i.e. revisioning_node_access().
+  $access = $node_op && node_access($node_op, $node);
+
   return $access;
 }
 

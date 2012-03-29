@@ -44,7 +44,10 @@ function revisioning_set_node_revision_info(&$node) {
     $node->is_pending = _revisioning_node_is_pending($node);
   }
   // The revision_moderation flag may be overridden on the node edit form by
-  // users with the "administer nodes" permission
+  // users with the "administer nodes" permission. By implication, the 'Publish'
+  // link needs to be available to those users, for any content with a pending
+  // revision, as the publish check box on the edit form applies to the current
+  // rather than the pending revision(s).
   if (!isset($node->revision_moderation)) {
     $node->revision_moderation = revisioning_content_is_moderated($node->type, $node);
   }
@@ -148,8 +151,10 @@ function revisioning_revision_is_current($node) {
  *  moderated by default (i.e by their content type).
  * @return
  *  TRUE, if the supplied type has the "New revision in draft, pending
- *  moderation" box ticked on the Structure>>Content types>>edit page
- *  (see Revisioning).
+ *  moderation" box ticked on the Structure >> Content types >> edit page OR
+ *  when a pending revision exists. The latter is to support the feature of
+ *  "moderate at any time" available to users with the "administer nodes"
+ *  permission.
  */
 function revisioning_content_is_moderated($content_type, $node = NULL) {
   $content_type_is_moderated = !empty($content_type) && in_array('revision_moderation', variable_get('node_options_' . $content_type, array()));
