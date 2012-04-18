@@ -375,6 +375,13 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
       'pathauto' => FALSE // so that pathauto_node_update() does nothing
     );
   }
+
+  // Hack to work around issue [#1436044] in OG module
+  if (module_exists('og')) {
+    $original = new stdClass();
+    $original->uid = $node->uid;
+    $node->original = $original;
+  }
   module_invoke_all('node_update', $node);
   module_invoke_all('entity_update', $node, 'node');
 
