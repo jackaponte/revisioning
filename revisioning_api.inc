@@ -480,6 +480,13 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
       'pathauto' => FALSE // so that pathauto_node_update() does nothing
     );
   }
+
+  // Hack to work around issue [#1436044] in OG module
+  if (module_exists('og')) {
+    $original = new stdClass();
+    $original->uid = $node_revision->uid;
+    $node_revision->original = $original;
+  }
   module_invoke_all('node_update', $node_revision);
   module_invoke_all('entity_update', $node_revision, 'node');
 
