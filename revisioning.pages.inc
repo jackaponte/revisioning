@@ -35,7 +35,9 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     /* Only add this radio selector if user has the 'administer nodes' permission */
     if (user_access('administer nodes')) {
       // Expand and move this vertical tab to top, so that it's in user's face
-      $form['menu']['#collapsed'] = TRUE;
+      if (isset($form['menu'])) {
+        $form['menu']['#collapsed'] = TRUE;
+      }
       $form['revision_information']['#collapsed'] = FALSE;
       $form['revision_information']['#weight'] = -3;
 
