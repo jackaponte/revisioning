@@ -78,7 +78,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     // that we can redirect to the pending, as opposed to current, revision.
     $form['actions']['submit']['#submit'][] = '_revisioning_form_submit';
 
-    if (isset($form['actions']['delete'])) {
+    if (isset($form['actions']['delete']) && isset($form['actions']['delete']['#type'])) {
       $nid = $form['#node']->nid;
       if (revisioning_get_number_of_revisions($nid) > 1) {
         // Special treatment for Delete button when there are 2 or more revisions.
