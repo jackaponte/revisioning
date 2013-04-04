@@ -86,7 +86,7 @@ function revisioning_permission() {
     : t('Applies to content types that are subject to moderation, i.e.: %moderated_content_types.',
         array('%moderated_content_types' => $moderated_content_types));
 
-  if (!empty($moderated_content_types) && variable_get('revisioning_require_update_to_publish', FALSE)) {
+  if (!empty($moderated_content_types) && variable_get('revisioning_require_update_to_publish', TRUE)) {
     $publish_description .= ' <br/>' . $edit_description;
   }
 
@@ -681,7 +681,7 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
       return user_access($revision_op, $account) ? 'update' : FALSE;
 
     case 'publish revisions':
-      $node_op = variable_get('revisioning_require_update_to_publish', FALSE) ? 'update' : 'view';
+      $node_op = variable_get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
       if (user_access('publish revisions', $account)) {
         return $node_op;
       }
@@ -694,7 +694,7 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
       return FALSE;
 
     case 'unpublish current revision':
-      $node_op = variable_get('revisioning_require_update_to_publish', FALSE) ? 'update' : 'view';
+      $node_op = variable_get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
       return user_access('unpublish current revision', $account) ? $node_op : FALSE;
 
     case 'delete revisions':
