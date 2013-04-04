@@ -1035,3 +1035,15 @@ if (module_exists('diff')) {
     return diff_diffs_show($node, $node->vid, $node->current_revision_id);
   }
 }
+
+/**
+ * Implements hook_page_manager_override().
+ *
+ * See http://drupal.org/node/1509674#comment-6702798
+ */
+function revisioning_page_manager_override($task_name) {
+  switch ($task_name) {
+    case 'node_view':
+      return '_revisioning_view';
+  }
+}
