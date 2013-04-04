@@ -375,6 +375,10 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
       'pathauto' => FALSE // so that pathauto_node_update() does nothing
     );
   }
+  elseif (!isset($node->path['alias'])) {
+    // [#1328180], [#1576552]
+    $node->path['alias'] = '';
+  }
 
   // Hack to work around issue [#1436044] in OG module
   if (module_exists('og')) {
@@ -486,6 +490,10 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
       'alias' => '',      // so that path_node_update() does nothing
       'pathauto' => FALSE // so that pathauto_node_update() does nothing
     );
+  }
+  elseif (!isset($node_revision->path['alias'])) {
+    // [#1328180], [#1576552]
+    $node_revision->path['alias'] = '';
   }
 
   // Hack to work around issue [#1436044] in OG module
