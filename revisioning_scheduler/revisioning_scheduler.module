@@ -247,6 +247,10 @@ function revisioning_scheduler_revisionapi($op, $node) {
  * later date.
  */
 function revisioning_scheduler_node_presave($node) {
+  if (!isset($node->nid)) {
+    // This may happen when importing files using Feeds module.
+    return;
+  }
   if (empty($node->revision_moderation) || !empty($node->auto_publish)) {
     _revisioning_scheduler_unschedule_all_revisions($node->nid);
   }
