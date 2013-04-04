@@ -533,8 +533,9 @@ function revisioning_node_presave($node) {
     $node->auto_publish = TRUE;
   }
 
-  if (!isset($node->nid)) { // new node, override Publish flag if moderated
-    if (!empty($node->revision_moderation)) {
+  if (!isset($node->nid)) {
+    // New node, if moderated without Auto-publish, ignore the default Publish tickbox
+    if (isset($node->revision_moderation) && $node->revision_moderation == TRUE) {
       $node->status = NODE_NOT_PUBLISHED;
     }
     return;
