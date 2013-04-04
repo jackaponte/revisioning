@@ -121,9 +121,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
       '#weight' => 10,
       '#attributes' => array('class' => array('publication-date')),
     );
-    $form['#attached']['js'] = array(
-      drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js'
-    );
+    $form['#attached']['js'][] = drupal_get_path('module', 'revisioning_scheduler') . '/revision-schedule.js';
   }
 }
 
