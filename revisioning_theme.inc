@@ -65,7 +65,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
             '!username' => theme('username', array('account' => $revision))))
       . (empty($revision->log) ? '' : '<p class="revision-log">' . filter_xss($revision->log) . '</p>');
     $form['info'][$vid] = array(
-      '#type' => 'item',
+      '#type' => 'markup', // Was: 'item', see [#1884696]
       '#markup' => $first_cell
     );
 
