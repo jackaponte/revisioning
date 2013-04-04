@@ -500,8 +500,12 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
   module_invoke_all('node_update', $node_revision);
   module_invoke_all('entity_update', $node_revision, 'node');
 
-  // Update node_access table
-  node_access_acquire_grants($node_revision);
+  // Update node_access table only for existing nodes. When the node is newly
+  // created via the node/add page, node_access_acquire_grants() is called by
+  // node_save() anyway. See [#1243018].
+  if (empty($node_revision->is_new)) {
+    node_access_acquire_grants($node_revision);
+  }
 
   if ($clear_cache) {
     cache_clear_all();
