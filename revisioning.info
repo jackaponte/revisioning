@@ -14,6 +14,3 @@ files[] = views/revisioning_handler_filter_node_state.inc
 files[] = views/revisioning_handler_filter_revision_state.inc
 files[] = views/revisioning_handler_filter_revision_latest.inc
 files[] = views/revisioning_handler_filter_revision_latest_published.inc
-
-version = "7.x-1.x-dev"
-
