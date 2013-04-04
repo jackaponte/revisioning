@@ -538,6 +538,12 @@ function revisioning_node_presave($node) {
     if (isset($node->revision_moderation) && $node->revision_moderation == TRUE) {
       $node->status = NODE_NOT_PUBLISHED;
     }
+    // Set these for Rules, see [#1627400]
+    $node->current_status  = $node->status;
+    $node->current_title   = $node->title;
+    $node->current_comment = $node->comment;
+    $node->current_promote = $node->promote;
+    $node->current_sticky  = $node->sticky;
     return;
   }
 
