@@ -403,11 +403,6 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
  * This is same as node_revision_delete_confirm_submit() in node_pages.inc,
  * except it doesn't put any messages on the screen. This way it becomes
  * reusable (eg. in actions).
- * Since we are calling nodeapi as in node_revision_delete_confirm_submit(), we
- * invoke our "post delete" revisionapi hook in nodeapi. This way revisionapi
- * hooks work the same way both with "delete revision" submit handler and when
- * this function is called, and we don't invoke revisionapi "post delete" hook
- * twice.
  *
  * @param $node
  *  Target $node object (loaded with target revision) or nid of target node
@@ -422,8 +417,8 @@ function _revisioning_delete_revision(&$node, $vid = NULL) {
   db_delete('node_revision')
     ->condition('vid', $node_revision->vid)
     ->execute();
-  module_invoke_all('node_' . $node_revision, 'delete revision');
   watchdog('content', '@type: deleted %title revision %revision.', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid));
+  module_invoke_all('revisionapi', 'post delete', $node_revision);
 }
 
 /**
