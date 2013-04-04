@@ -22,15 +22,15 @@ define('NEW_REVISION_EVERY_SAVE', 1);
 define('REVISIONS_BLOCK_OLDEST_AT_TOP', 0);
 define('REVISIONS_BLOCK_NEWEST_AT_TOP', 1);
 
-require_once drupal_get_path('module', 'revisioning') . '/revisioning_api.inc';
-require_once drupal_get_path('module', 'revisioning') . '/revisioning.pages.inc';
-require_once drupal_get_path('module', 'revisioning') . '/revisioning_theme.inc';
-require_once drupal_get_path('module', 'revisioning') . '/revisioning_tokens.inc';
-require_once drupal_get_path('module', 'revisioning') . '/revisioning_triggers_actions.inc';
-require_once drupal_get_path('module', 'revisioning') . '/revisioning.taxonomy.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_api.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.pages.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_theme.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_tokens.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_triggers_actions.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.taxonomy.inc';
 if (module_exists('rules')) {
   // This is not supposed to be necessary, but without it bad things happen
-  require_once drupal_get_path('module', 'revisioning') . '/revisioning.rules.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.rules.inc';
 }
 
 
