@@ -64,7 +64,7 @@ function revisioning_ux_menu() {
  * Hook page alter
  */
 function revisioning_ux_page_alter(&$page) {
-  if (array_key_exists('system_main', $page['content']) && array_key_exists('#form_id',$page['content']['system_main']) && ($page['content']['system_main']['#form_id'] == 'revisioning_revisions_summary')) {
+  if (isset($page['content']['system_main']['#form_id']) && ($page['content']['system_main']['#form_id'] == 'revisioning_revisions_summary')) {
     $node = node_load($page['content']['system_main']['nid']['#value']);
     $page['content']['buttons']['#prefix'] = '<div class="revisioning-ux-buttons">';
     $page['content']['buttons']['#suffix'] = '</div>';
