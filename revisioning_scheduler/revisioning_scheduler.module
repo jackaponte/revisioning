@@ -299,6 +299,14 @@ function revisioning_scheduler_node_update($node) {
 }
 
 /**
+ * Implements hook_node_delete().
+ */
+function revisioning_scheduler_node_delete($node) {
+  // Delete scheduled publication of revisions of the deleted node.
+  _revisioning_scheduler_unschedule_all_revisions($node->nid);
+}
+
+/**
  * Implements hook_cron().
  *
  * If there are any revisions with times that have passed, then publish them
@@ -310,7 +318,9 @@ function revisioning_scheduler_cron() {
     array(':date' => time())
   );
   foreach ($result as $revision) {
-    _revisioning_publish_revision(node_load($revision->revision_nid, $revision->revision_vid));
+    if ($node_revision = node_load($revision->revision_nid, $revision->revision_vid)) {
+      _revisioning_publish_revision($node_revision);
+    }
     _revisioning_scheduler_unschedule_all_revisions($revision->revision_nid);
   }
 }
