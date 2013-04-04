@@ -133,7 +133,7 @@ function revisioning_revisions_summary_validate($form, &$form_state) {
   $form_state['values']['tickbox'] = array_filter($form_state['values']['tickbox']);
   $count = count($form_state['values']['tickbox']);
   if ($count != 2) {
-    form_set_error('tickbox', t('Please select 2 revisions rather than !count', array('!count' => $count)));
+    form_set_error('tickbox', t('Please select 2 revisions rather than @count', array('@count' => $count)));
   }
 }
 

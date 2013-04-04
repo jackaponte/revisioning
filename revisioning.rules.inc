@@ -78,7 +78,7 @@ function _revisioning_rules_event_arguments() {
     'user' => array(
       'type' => 'user',
       'label' => t('acting user'),
-      'handler' => 'rules_events_argument_global_user'
+      'handler' => 'rules_events_argument_global_user' // @todo see [#1477462]
     ),
   );
 }
