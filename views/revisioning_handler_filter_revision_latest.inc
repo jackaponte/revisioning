@@ -41,6 +41,9 @@ class revisioning_handler_filter_revision_latest extends views_handler_filter_bo
     if (!$node_table) {
       $node_table = $this->query->ensure_table('node_' . $revisions_table);
     }
+    if (!$node_table) { // final desperate guess ...
+      $node_table = 'node';
+    }
 
     // The subquery selects the maximum revision ID (vid) for a given node ID
     // (nid). This is guaranteed to be the latest revision, because vids are
