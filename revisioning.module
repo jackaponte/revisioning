@@ -1013,6 +1013,7 @@ function _revisioning_title_for_tab($node, $tab) {
   if ($tab == 'revisions') {
     return is_numeric(arg(3)) ? t('Revision operations') : t('Revisions');
   }
+/*
   if (empty($node->revision_moderation) || $node->num_revisions <= 1) {
     return ($tab == 'edit' ? t('Edit') : t('View'));
   }
@@ -1020,6 +1021,16 @@ function _revisioning_title_for_tab($node, $tab) {
     return ($tab == 'edit' ? t('Edit latest') : t('View latest'));
   }
   return ($tab == 'edit' ? t('Edit current') : t('View current'));
+ */
+  if (!empty($node->revision_moderation) && $node->num_revisions > 1) {
+    if (_revisioning_load_op($node, $tab) == REVISIONING_LOAD_LATEST) {
+      return ($tab == 'edit' ? t('Edit latest') : t('View latest'));
+    }
+    if (_revisioning_access_node_revision('view revisions', $node)) {
+      return ($tab == 'edit' ? t('Edit current') : t('View current'));
+    }
+  }
+  return ($tab == 'edit' ? t('Edit') : t('View'));
 }
 
 function _revisioning_set_custom_theme_if_necessary() {

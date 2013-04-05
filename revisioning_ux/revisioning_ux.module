@@ -136,13 +136,12 @@ function _revisioning_ux_revisioning_title_for_tab($node, $tab) {
 }
 
 function _revisioning_ux_revisioning_title_for_edit_and_view($node, $vid, $tab) {
-  // TODO: stash in $node
   $latest_vid = revisioning_get_latest_revision_id($node->nid);
   $title = ($tab == 'edit') ? t('Edit') : t('View');
   if ($vid == $node->current_revision_id) {
     $title = ($tab == 'edit') ? t('Edit Current') : t('View Current');
   }
-  if ($vid == $latest_vid) {
+  elseif ($vid == $latest_vid) {
     $title = ($tab == 'edit') ? t('Edit Latest') : t('View Latest');
   }
   return $title;
