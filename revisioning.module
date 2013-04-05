@@ -341,8 +341,8 @@ function revisioning_menu_alter(&$items) {
 
   if (module_exists('diff')) {
     // If Diff module is enabled, make sure it uses correct access callback
-    $items['node/%node/revisions/view/%/%']['access callback'] = '_revisioning_access_node_revision';
-    $items['node/%node/revisions/view/%/%']['access arguments'] = array('view revisions', 1);
+    $items['node/%node/revisions/view']['access callback'] = '_revisioning_access_node_revision';
+    $items['node/%node/revisions/view']['access arguments'] = array('view revisions', 1);
   }
 }
 
