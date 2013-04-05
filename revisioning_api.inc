@@ -85,12 +85,20 @@ function revisioning_get_number_of_archived_revisions($node) {
 
 /**
  * Delete all revisions with a vid less than the current.
+ *
+ * Use node_revision_delete from node.module to ensure that we cleanup not
+ * only node revisions but also all attached field revisions as well.
  */
 function revisioning_delete_archived_revisions($node) {
-  return db_delete('node_revision')
-    ->condition('nid', $node->nid)
-    ->condition('vid', $node->current_revision_id, '<')
+  $revisions = db_select('node_revision', 'n')
+    ->fields('n', array('vid'))
+    ->condition('n.nid', $node->nid)
+    ->condition('n.vid', $node->current_revision_id, '<')
     ->execute();
+
+  foreach ($revisions as $rev) {
+    node_revision_delete($rev->vid);
+  }
 }
 
 /**
