@@ -415,10 +415,10 @@ function revisioning_block_view($delta = '') {
 }
 
 function _revisioning_block_pending_revisions_content($revisions) {
+  $num_revisions = count($revisions);
   $max_num_shown = variable_get('revisioning_block_num_pending', 5);
-  $revisions = array_slice($revisions, 0, $max_num_shown);
   $links = array();
-  foreach ($revisions as $revision) {
+  foreach (array_slice($revisions, 0, $max_num_shown) as $revision) {
     // If they exist, should we show multiple pending revisions on the same node?
     $links[] = l($revision->title, "node/$revision->nid/revisions/$revision->vid/view");
   }
@@ -434,7 +434,7 @@ function _revisioning_block_pending_revisions_content($revisions) {
       $title_link = 'admin/content';
     }
   }
-  $title = t('!num_revisions pending', array('!num_revisions' => format_plural(count($revisions), '1 revision', '@count revisions')));
+  $title = t('!num_revisions pending', array('!num_revisions' => format_plural($num_revisions, '1 revision', '@count revisions')));
   $block = array();
   $block['subject'] = empty($title_link) ? $title : l($title, $title_link, $link_options);
   $block['content'] = theme('item_list', array('items' => $links, 'title' => ''));
