@@ -317,7 +317,7 @@ function _revisioning_generate_node_links_according_to_permissions($node, $link_
       $themed_links[] = l(t('Publish'), "node/$nid/revisions/$node->vid/publish");
     }
     elseif (_revisioning_access_node_revision('unpublish current revision', $node)) {
-      $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish");
+      $themed_links[] = l(t('Unpublish current revision'), "node/$nid/unpublish-current");
     }
   }
   if (_revisioning_access_node_revision('delete archived revisions', $node)) {

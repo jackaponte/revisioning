@@ -153,7 +153,7 @@ function revisioning_menu() {
   );
 
   // Plain link, not a tab, to allow users to unpublish a node.
-  $items['node/%node/unpublish'] = array(
+  $items['node/%node/unpublish-current'] = array(
   //'title' => t(Unpublish current revision'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('revisioning_unpublish_confirm', 1),

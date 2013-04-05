@@ -198,7 +198,7 @@ function revisioning_ux_unpublish($form, $form_state, $node) {
 function revisioning_ux_unpublish_submit(&$form, &$form_state) {
   if (isset($form_state['values']['node'])) {
     $node = $form_state['values']['node'];
-    $form_state['redirect'] = "node/{$node->nid}/unpublish";
+    $form_state['redirect'] = "node/{$node->nid}/unpublish-current";
   }
 }
 
