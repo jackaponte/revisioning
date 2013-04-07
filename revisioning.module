@@ -541,9 +541,11 @@ function revisioning_node_presave($node) {
     // Set these for Rules, see [#1627400]
     $node->current_status  = $node->status;
     $node->current_title   = $node->title;
-    $node->current_comment = $node->comment;
     $node->current_promote = $node->promote;
     $node->current_sticky  = $node->sticky;
+    if (isset($node->comment)) { // Comment module enabled
+      $node->current_comment = $node->comment;
+    }
     return;
   }
 
@@ -569,9 +571,11 @@ function revisioning_node_presave($node) {
     // "sick" table denormalisation.
     $node->current_status  = $current_revision->status;
     $node->current_title   = $current_revision->title;
-    $node->current_comment = $current_revision->comment;
     $node->current_promote = $current_revision->promote;
     $node->current_sticky  = $current_revision->sticky;
+    if (isset($current_revision->comment)) { // Comment module enabled
+      $node->current_comment = $current_revision->comment;
+    }
   }
 }
 
@@ -610,7 +614,7 @@ function revisioning_node_update($node) {
         'vid'     => $node->current_revision_id,
         'status'  => $node->current_status,
         'title'   => $node->current_title,
-        'comment' => $node->current_comment,
+        'comment' => $node->current_comment, // in case Comment module enabled
         'promote' => $node->current_promote,
         'sticky'  => $node->current_sticky))
       ->condition('nid', $node->nid)

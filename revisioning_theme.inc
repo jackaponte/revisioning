@@ -233,9 +233,9 @@ function theme_revisioning_revisions_summary($variables) {
     else {
       $status = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
-    if (user_access('administer nodes')) {
-      $status['data'] .= ' [status=' . $form['status'][$vid]['#value'] . ']';
-    }
+    //if (user_access('administer nodes')) { // debug
+    //  $status['data'] .= ' [status=' . $form['status'][$vid]['#value'] . ']';
+    //}
     $row[] = $status;
 
     // Apply CSS class
