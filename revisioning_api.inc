@@ -485,7 +485,7 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
     // revisioning_update_taxonomy_index(), via revisioning_node_update().
     $node_revision->current_revision_id = $node_revision->vid;
   }
-  $node_revision->status = NODE_PUBLISHED;
+  $node_revision->status = $node_revision->current_status = NODE_PUBLISHED;
 
   // Make sure the alias, if present, is not changed when publishing.
   if (!isset($node_revision->path['pathauto'])) {
