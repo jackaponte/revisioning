@@ -23,7 +23,6 @@ function revisioning_rules_event_info() {
     'revisioning_post_update' => $default + array(
       'label' => t('Content revision has been updated'),
     ),
-
     'revisioning_pre_publish' => $default + array(
       'label' => t('Content revision is going to be published'),
     ),
@@ -63,7 +62,7 @@ function _revisioning_rules_event_arguments() {
     'author' => array(
       'type' => 'user',
       'label' => t('content author'),
-      'handler' => 'rules_events_argument_node_author'
+      'handler' => 'revisioning_events_argument_node_author'
     ),
     'target_author' => array(
       'type' => 'user',
@@ -78,7 +77,7 @@ function _revisioning_rules_event_arguments() {
     'user' => array(
       'type' => 'user',
       'label' => t('acting user'),
-      'handler' => 'rules_events_argument_global_user' // @todo see [#1477462]
+      'handler' => 'revisioning_events_argument_global_user'
     ),
   );
 }
@@ -102,6 +101,16 @@ function revisioning_events_argument_current_revision($arguments, $name, $info) 
 function revisioning_events_argument_target_revision_author($arguments, $name, $info) {
   $node = $arguments['node'];
   return user_load($node->revision_uid);
+}
+
+function revisioning_events_argument_node_author($arguments, $name, $info) {
+  $node = $arguments['node'];
+  return user_load($node->uid);
+}
+
+function revisioning_events_argument_global_user($arguments, $name, $info) {
+  global $user;
+  return user_load($user->uid);
 }
 
 /**
