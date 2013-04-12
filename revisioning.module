@@ -78,7 +78,7 @@ function revisioning_permission() {
       'description' => ''))
     : array();
 
-  $edit_description = t('Also requires update permission from either the Node or other content access module(s).');
+  $edit_description = t('Also requires edit permission from either the Node or other content access module(s).');
 
   $moderated_content_types = implode(', ', revisioning_moderated_content_types(FALSE));
   $publish_description = empty($moderated_content_types)
@@ -844,6 +844,11 @@ function revisioning_node_access($node, $node_op, $account) {
     if ($node->status == NODE_PUBLISHED || (!empty($node->revision_moderation) && revisioning_user_node_access('view revisions', $node, $account))) {
       return NODE_ACCESS_ALLOW;
     }
+  }
+  // [#1492246]
+  // Deny access to unpublished, moderated content by anonymous users.
+  if (empty($node->status) && !empty($node->revision_moderation) && empty($account->uid)) {
+    return NODE_ACCESS_DENY;
   }
   return NODE_ACCESS_IGNORE;
 }
