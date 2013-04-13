@@ -11,6 +11,7 @@
  * Implements hook_token_info().
  */
 function revisioning_token_info() {
+  $info = array();
   // First specify token type(s)
   $info['types']['revision'] = array(
     'name' => t("Revisions"),
@@ -18,25 +19,25 @@ function revisioning_token_info() {
     'needs-data' => 'node'
   );
   // Then specify the tokens
-  $info['tokens']['revision']['author'] = array(
-    'name' => t("Author"),
-    'description' => t("The author (editor) of the revision"),
+  $info['tokens']['node']['revision-author'] = array(
+    'name' => t("Revision author"),
+    'description' => t("The author (or editor) of the revision"),
     'type' => 'user'
   );
-  $info['tokens']['revision']['body'] = array(
-    'name' => t("Body"),
+  $info['tokens']['node']['revision-body'] = array(
+    'name' => t("Revision body"),
     'description' => t("The main body text of the revision")
   );
-  $info['tokens']['revision']['created'] = array(
-    'name' => t("Timestamp"),
+  $info['tokens']['node']['revision-created'] = array(
+    'name' => t("Revision timestamp"),
     'description' => t("The date and time the revision was created."),
     'type' => 'date'
   );
-  $info['tokens']['revision']['title'] = array(
-    'name' => t("Title"),
+  $info['tokens']['node']['revision-title'] = array(
+    'name' => t("Revision title"),
     'description' => t("The title of the revision")
   );
-  $info['tokens']['revision']['vid'] = array(
+  $info['tokens']['node']['revision-vid'] = array(
     'name' => t("Revision ID"),
     'description' => t("The unique ID of the revision")
   );
@@ -49,48 +50,51 @@ function revisioning_token_info() {
 function revisioning_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
 
-  if ($type == 'revision' && !empty($data)) {
-    $revision = empty($data['revision']) ? $data['node'] : $data['revision'];
-    if (empty($revision)) {
-      return $replacements;
-    }
+  if (!empty($data['node']) || !empty($data['revision'])) {
+    $node = empty($data['node']) ? $data['revision'] : $data['node'];
+
+    // This may not be necessary in all cases, but is cached anyway.
+    $revision = node_load($node->nid, $node->vid);
+
     $sanitize = !empty($options['sanitize']);
+
     foreach ($tokens as $name => $original) {
       switch ($name) {
 
-        case 'title':
+        case 'revision-title':
           $title = $revision->title;
           $replacements[$original] = $sanitize ? check_plain($title) : $title;
           break;
 
-        case 'body':
+        case 'revision-body':
           $text = $revision->body[$revision->language][0]['value'];
           $replacements[$original] = $sanitize ? check_plain($text) : $text;
           break;
 
-        case 'vid':
+        case 'revision-vid':
           $replacements[$original] = $revision->vid;
           break;
 
         // Default values for the chained tokens handled below.
-        case 'author':
-          $author = user_load($revision->revision_uid);
+        case 'revision-author':
+          $author = user_load($revision->uid);
           $name = format_username($author);
           $replacements[$original] = $sanitize ? check_plain($name) : $name;
           break;
 
-        case 'created':
-          $replacements[$original] = format_date($revision->created, 'medium', '', NULL, $revision->language);
+        case 'revision-created':
+          $langcode = empty($options['language']->language) ? LANGUAGE_NONE : $options['language']->language;
+          $replacements[$original] = format_date($revision->created, 'medium', '', NULL, $langcode);
           break;
       }
     }
     // Chained tokens for revision author and revision timestamp.
-    // These fan out into sub-token fields, e.g author:name, author:mail etc.
-    if ($author_tokens = token_find_with_prefix($tokens, 'author')) {
-      $author = user_load($revision->revision_uid);
+    // These fan out into sub-token fields, e.g revision-author:mail etc.
+    if ($author_tokens = token_find_with_prefix($tokens, 'revision-author')) {
+      $author = user_load($revision->uid);
       $replacements += token_generate('user', $author_tokens, array('user' => $author), $options);
     }
-    if ($created_tokens = token_find_with_prefix($tokens, 'created')) {
+    if ($created_tokens = token_find_with_prefix($tokens, 'revision-created')) {
       $replacements += token_generate('date', $created_tokens, array('date' => $revision->revision_timestamp), $options);
     }
   }
