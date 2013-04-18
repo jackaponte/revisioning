@@ -435,10 +435,17 @@ function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
     foreach($entities as $node) {
       if (!empty($node->dont_display)) {
         $node->title = FALSE;
-        $node->comment = FALSE;
+        $node->comment = COMMENT_NODE_HIDDEN;
         $node->link = FALSE;
         unset($node->body);
         unset($node->rss_elements);
+      }
+      else {
+        // Display, however suppress comment form when revision is moderated.
+        if (!empty($node->revision_moderation) && empty($node->is_current)) {
+          // Prevent comment_node_view() from adding the comment form.
+          $node->comment = COMMENT_NODE_HIDDEN;
+        }
       }
     }
   }
