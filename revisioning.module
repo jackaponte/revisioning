@@ -441,8 +441,8 @@ function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
         unset($node->rss_elements);
       }
       else {
-        // Display, however suppress comment form when revision is moderated.
-        if (!empty($node->revision_moderation) && empty($node->is_current)) {
+        // Display, however suppress comment form when revision is not current.
+        if (isset($node->comment) && !empty($node->revision_moderation) && empty($node->is_current)) {
           // Prevent comment_node_view() from adding the comment form.
           $node->comment = COMMENT_NODE_HIDDEN;
         }
@@ -828,8 +828,13 @@ function _revisioning_access_node_revision($revision_op, $node) {
   // ... then check with core to assess node permissions
   // node_access will invoke hook_node_access(), i.e. revisioning_node_access().
   $access = $node_op && node_access($node_op, $node);
-
-  return $access;
+  if (!$access) {
+    return FALSE;
+  }
+  // Let other modules weigh in on the outcome.
+  // If any module denies access that is the final result.
+  $access = module_invoke_all('revisioning_access_node_revision', $revision_op, $node);
+  return !in_array(NODE_ACCESS_DENY, $access, TRUE);
 }
 
 /**

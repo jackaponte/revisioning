@@ -10,6 +10,24 @@
 /************************** Rules Events **************************************/
 
 /**
+ * Implements hook_rules_data_info()
+ *
+function revisioning_rules_data_info() {
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'entity') . '/modules/node.info.inc';
+  $rules_data = array(
+    'revisioning_revision' => array(
+      'label' => t('Content revision'),
+      'group' => t('Revisioning'),
+      'parent' => 'node',
+      'ui class' => 'RulesDataUIEntity',
+      'wrap' => TRUE,
+    )
+  );
+  return $rules_data;
+}
+*/
+
+/**
  * Implements hook_rules_event_info() on behalf of the Revisioning module.
  */
 function revisioning_rules_event_info() {
@@ -55,8 +73,8 @@ function _revisioning_rules_event_variables() {
       'description' => t('The acting user.'),
       'handler' => 'revisioning_events_argument_global_user'
     ),
-    'current_revision' => array(
-      'type' => 'node',
+    'revision' => array(
+      'type' => 'node', // revisioning_revision',
       'label' => t('current revision of target content.'),
       'description' => t('The current content revision'),
       'handler' => 'revisioning_events_argument_current_revision'
@@ -90,7 +108,7 @@ function revisioning_events_argument_global_user($arguments, $name, $info) {
 
 function revisioning_events_argument_current_revision($arguments, $name, $info) {
   if (empty($arguments['node'])) {
-    drupal_set_message(t('Could not evaluate rule condition -- node variable missing.'), 'warning');
+    drupal_set_message(t('Revisioning: could not evaluate rule condition -- node variable missing.'), 'warning');
     return FALSE;
   }
   $node = $arguments['node'];
