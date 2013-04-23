@@ -828,13 +828,11 @@ function _revisioning_access_node_revision($revision_op, $node) {
   // ... then check with core to assess node permissions
   // node_access will invoke hook_node_access(), i.e. revisioning_node_access().
   $access = $node_op && node_access($node_op, $node);
-  if (!$access) {
-    return FALSE;
-  }
-  // Let other modules weigh in on the outcome.
-  // If any module denies access that is the final result.
-  $access = module_invoke_all('revisioning_access_node_revision', $revision_op, $node);
-  return !in_array(NODE_ACCESS_DENY, $access, TRUE);
+
+  // Let other modules override the outcome, if there are any.
+  // If any module denies access that is the final result, otherwise allow.
+  $overrides = module_invoke_all('revisioning_access_node_revision', $revision_op, $node);
+  return empty($overrides) ? $access : !in_array(NODE_ACCESS_DENY, $overrides, TRUE);
 }
 
 /**
