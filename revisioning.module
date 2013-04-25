@@ -435,7 +435,7 @@ function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
     foreach($entities as $node) {
       if (!empty($node->dont_display)) {
         $node->title = FALSE;
-        $node->comment = COMMENT_NODE_HIDDEN;
+        $node->comment = 0; // == COMMENT_NODE_HIDDEN if Comment module enabled
         $node->link = FALSE;
         unset($node->body);
         unset($node->rss_elements);
@@ -444,7 +444,7 @@ function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
         // Display, however suppress comment form when revision is not current.
         if (isset($node->comment) && !empty($node->revision_moderation) && empty($node->is_current)) {
           // Prevent comment_node_view() from adding the comment form.
-          $node->comment = COMMENT_NODE_HIDDEN;
+          $node->comment = 0; // == COMMENT_NODE_HIDDEN;
         }
       }
     }
