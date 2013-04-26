@@ -629,6 +629,35 @@ function revisioning_node_update($node) {
   }
   // Generate a 'post update' event in Rules
   module_invoke_all('revisionapi', 'post update', $node);
+
+  // Add new revision usage records to files to prevent them being deleted - #1901272
+  $fields = field_info_instances('node', $node->type);
+  foreach ($fields as $field_name => $value) {
+    $field_info = field_info_field($field_name);
+    if ($field_info['type'] == 'file') {
+      $file_fields[$field_name] = $value;
+    }
+  }
+  // Create file revision entries for files created using older revisioning versions
+  $old_node = isset($node->original) ? $node->original : NULL;
+  if (isset($old_node) && !empty($file_fields)) {
+    foreach ($file_fields as $file_field) {
+      $old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->language);
+      foreach ($old_files as $old_single_file) {
+        $old_file = (object) $old_single_file;
+        file_usage_add($old_file, 'revisioning', 'revision', $old_node->vid);
+      }
+    }
+  }
+  if (!empty($file_fields)) {
+    foreach ($file_fields as $file_field) {
+      $files = field_get_items('node', $node, $file_field['field_name'], $node->language);
+      foreach ($files as $single_file) {
+        $file = (object) $single_file;
+        file_usage_add($file, 'revisioning', 'revision', $node->vid);
+      }
+    }
+  }
 }
 
 /**
@@ -645,6 +674,24 @@ function revisioning_node_insert($node) {
       ? t('Initial revision created and published.')
       : t('Initial draft created, pending publication.')
     );
+  }
+
+  // Add revision usage records to files to prevent them being deleted - #1901272
+  $fields = field_info_instances('node', $node->type);
+  foreach ($fields as $field_name => $value) {
+    $field_info = field_info_field($field_name);
+    if ($field_info['type'] == 'file') {
+      $file_fields[$field_name] = $value;
+    }
+  }
+  if (!empty($file_fields)) {
+    foreach ($file_fields as $file_field) {
+      $files = field_get_items('node', $node, $file_field['field_name'], $node->language);
+      foreach ($files as $single_file) {
+        $file = (object) $single_file;
+        file_usage_add($file, 'revisioning', 'revision', $node->vid);
+      }
+    }
   }
 }
 
