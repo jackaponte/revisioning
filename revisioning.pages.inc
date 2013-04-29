@@ -333,7 +333,7 @@ function _revisioning_set_info_message() {
 function _revisioning_form_submit($form, &$form_state) {
   // Don't redirect when creating new node, when not moderated or user doesn't
   // have access to the revision.
-  if (isset($form['#node']->nid) && !empty($form_state['node']->revision_moderation) && _revisioning_access_node_revision('view revisions', $form_state['node'])) {
+  if (isset($form_state['node']->nid) && !empty($form_state['node']->revision_moderation) && _revisioning_access_node_revision('view revisions', $form_state['node'])) {
     $form_state['redirect'] = 'node/' . $form_state['node']->nid . '/revisions/' . $form_state['node']->vid . '/view';
   }
 }
