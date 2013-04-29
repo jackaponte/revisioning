@@ -643,9 +643,11 @@ function revisioning_node_update($node) {
   if (isset($old_node) && !empty($file_fields)) {
     foreach ($file_fields as $file_field) {
       $old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->language);
-      foreach ($old_files as $old_single_file) {
-        $old_file = (object) $old_single_file;
-        file_usage_add($old_file, 'revisioning', 'revision', $old_node->vid);
+      if (!empty($old_files)) {
+        foreach ($old_files as $old_single_file) {
+          $old_file = (object) $old_single_file;
+          file_usage_add($old_file, 'revisioning', 'revision', $old_node->vid);
+        }
       }
     }
   }
