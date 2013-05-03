@@ -634,7 +634,7 @@ function revisioning_node_update($node) {
   $fields = field_info_instances('node', $node->type);
   foreach ($fields as $field_name => $value) {
     $field_info = field_info_field($field_name);
-    if ($field_info['type'] == 'file') {
+    if ($field_info['type'] == 'file' && $value['widget']['module'] != 'emfield') { // #1986042
       $file_fields[$field_name] = $value;
     }
   }
