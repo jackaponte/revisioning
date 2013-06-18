@@ -498,6 +498,19 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
     // [#1328180], [#1576552]
     $node_revision->path['alias'] = '';
   }
+  // Make sure the menu, if present, is not changed when publishing [#1698024]
+  if (!isset($node_revision->menu)) {
+    $node_revision->menu = array(
+      'enabled' => '',
+      'mlid' => '',
+      'link_title' => '',
+      'link_path' => '',
+      'description' => '',
+    );
+  }
+  elseif (!isset($node_revision->menu)) {
+    $node_revision->menu = '';
+  }
 
   // Hack to work around issue [#1436044] in OG module
   if (module_exists('og')) {
