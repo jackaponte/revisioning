@@ -486,6 +486,7 @@ function revisioning_preprocess_node(&$variables) {
  * Output a status message, provided teh user has the required permission.
  *
  * @param string $message
+ *   The status message to be displayed.
  */
 function revisioning_set_status_message($message) {
   if (user_access('view revision status messages')) {

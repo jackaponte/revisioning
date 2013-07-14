@@ -55,11 +55,10 @@ function revisioning_update_taxonomy_index($node, $show_unpublished_content_term
 }
 
 /**
- * Return an array of all the taxonomy term ids belonging to the supplied node
- * revision.
+ * Return array of all taxonomy term ids belonging to the supplied revision.
  *
  * @param int $vid
- *   the vocabulary id
+ *   the revision id
  */
 function revisioning_get_tids($vid) {
   $tids = array();
