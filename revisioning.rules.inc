@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @file Rules integration for Revisioning module.
+ * @file
+ * Rules integration for Revisioning module.
  *
  * @addtogroup rules
  * @{
@@ -28,7 +29,9 @@ function revisioning_rules_data_info() {
 */
 
 /**
- * Implements hook_rules_event_info() on behalf of the Revisioning module.
+ * Implements hook_rules_event_info().
+ *
+ * On behalf of the Revisioning module.
  */
 function revisioning_rules_event_info() {
   $default = array(
@@ -62,8 +65,9 @@ function revisioning_rules_event_info() {
 }
 
 /**
- * Returns event variables (aka Data Selectors) suitable for use with a node
- * revision event.
+ * Returns event variables suitable for use with a node revision event.
+ *
+ * (aka Data Selectors)
  */
 function _revisioning_rules_event_variables() {
   $vars = array(
@@ -71,48 +75,56 @@ function _revisioning_rules_event_variables() {
       'type' => 'user',
       'label' => t('acting user'),
       'description' => t('The acting user.'),
-      'handler' => 'revisioning_events_argument_global_user'
+      'handler' => 'revisioning_events_argument_global_user',
     ),
     'revision' => array(
-      'type' => 'node', // revisioning_revision',
+      // Type revisioning_revision' ?
+      'type' => 'node',
       'label' => t('current revision of target content.'),
       'description' => t('The current content revision'),
-      'handler' => 'revisioning_events_argument_current_revision'
+      'handler' => 'revisioning_events_argument_current_revision',
     ),
-//    'author' => array(
-//      'type' => 'user',
-//      'label' => t('content author'),
-//      'description' => 'The creator of the initial version of the content',
-//      'handler' => 'revisioning_events_argument_node_author'
-//    ),
-//    'target_author' => array(
-//      'type' => 'user',
-//      'label' => t('target revision author'),
-//      'description' => t('The author of the target revision.'),
-//      'handler' => 'revisioning_events_argument_target_revision_author'
-//    ),
-//    'current_author' => array(
-//      'type' => 'user',
-//      'label' => t('current revision author'),
-//      'description' => t('The author of the current revision.'),
-//      'handler' => 'revisioning_events_argument_current_revision_author'
-//    ),
+  //    'author' => array(
+  //      'type' => 'user',
+  //      'label' => t('content author'),
+  //      'description' => 'The creator of the initial version of the content',
+  //      'handler' => 'revisioning_events_argument_node_author'
+  //    ),
+  //    'target_author' => array(
+  //      'type' => 'user',
+  //      'label' => t('target revision author'),
+  //      'description' => t('The author of the target revision.'),
+  //      'handler' => 'revisioning_events_argument_target_revision_author'
+  //    ),
+  //    'current_author' => array(
+  //      'type' => 'user',
+  //      'label' => t('current revision author'),
+  //      'description' => t('The author of the current revision.'),
+  //      'handler' => 'revisioning_events_argument_current_revision_author'
+  //    ),
   );
   return $vars;
 }
 
+/**
+ * Get global user argument.
+ */
 function revisioning_events_argument_global_user($arguments, $name, $info) {
   global $user;
   return user_load($user->uid);
 }
 
+/**
+ * Evaluate revision argument.
+ */
 function revisioning_events_argument_current_revision($arguments, $name, $info) {
   if (empty($arguments['node'])) {
     drupal_set_message(t('Revisioning: could not evaluate rule condition -- node variable missing.'), 'warning');
     return FALSE;
   }
   $node = $arguments['node'];
-  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  // Use revisioning_get_current_node_revision_id($node->nid); ?
+  $current_vid = $node->current_revision_id;
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return $current;
@@ -146,7 +158,7 @@ function revisioning_events_argument_current_revision_author($arguments, $name, 
 
 /*************************** Rules Conditions ********************************/
 
-/*
+/**
  * Implements hook_rules_condition_info().
  */
 function revisioning_rules_condition_info() {
@@ -165,7 +177,7 @@ function revisioning_rules_condition_info() {
     'label' => t('Content revision state'),
     'help' => t('Evaluates to TRUE, if the revision is in one of the selected states.'),
     'module' => 'revisioning',
-    'base' => 'revisioning_condition_revision_is'
+    'base' => 'revisioning_condition_revision_is',
   );
   $items['revisioning_condition_revision_is']['parameter']['revision_type'] = array(
     'type' => 'list<text>',
@@ -177,13 +189,13 @@ function revisioning_rules_condition_info() {
 }
 
 /**
- * Wrapper function to always return all revisioning states
+ * Wrapper function to always return all revisioning states.
  */
 function revisioning_revision_states_all() {
   return revisioning_revision_states();
 }
 
-/*
+/**
  * Condition: check for pending revisions of the node.
  */
 function revisioning_node_has_pending($node, $settings) {
@@ -191,7 +203,7 @@ function revisioning_node_has_pending($node, $settings) {
   return ($node->revision_moderation && $node->num_revisions == 1 && !$node->status) || ($num_pending = _revisioning_get_number_of_pending_revisions($node->nid)) > 0;
 }
 
-/*
+/**
  * Condition: check revision state.
  */
 function revisioning_condition_revision_is($node, $settings) {
@@ -269,7 +281,8 @@ function revisioning_rules_loaded_current_label($settings, $argument_labels) {
  * Action: load current revision of provided node.
  */
 function revisioning_rules_action_load_current($node) {
-  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  // Or revisioning_get_current_node_revision_id($node->nid); ?
+  $current_vid = $node->current_revision_id;
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return array('loaded_current_revision' => $current);
@@ -289,8 +302,7 @@ function revisioning_rules_action_publish_latest($node) {
  * Implements hook_entity_property_info_alter().
  */
 function revisioning_entity_property_info_alter(&$info) {
-  //$info['node']['properties']['author']['getter callback'] = 'revisioning_user_get_properties';
-  return;
+  // $info['node']['properties']['author']['getter callback'] = 'revisioning_user_get_properties';
 }
 
 /**

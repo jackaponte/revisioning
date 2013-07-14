@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Canned view to display a summary of all site content.
+ * Canned view to display a summary of all site content.
  */
 
 /**
@@ -12,7 +12,7 @@ function revisioning_views_default_views() {
   /*
    * View 'revisioning_content_summary'
    */
-  $view = new view;
+  $view = new view();
   $view->name = 'revisioning_content_summary';
   $view->human_name = 'Content summary';
   $view->description = 'Summary of moderated and unmoderated site content.';

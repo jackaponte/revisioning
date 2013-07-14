@@ -2,7 +2,7 @@
 
 /**
  * @file
- *   Views filter override to filter on revision state, i.e. pending, archived, current.
+ * Views filter override to filter on revision state, i.e. pending, archived, current.
  */
 
 class revisioning_handler_filter_revision_state extends views_handler_filter_in_operator {
@@ -10,7 +10,7 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
   /**
    * Override the query, in particular the WHERE clause.
    */
-  function query() {
+  public function query() {
     if (empty($this->value)) {
       return;
     }
@@ -23,7 +23,8 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
       if (!$node_table) {
         $node_table = $this->query->ensure_table('node_' . $revisions_table);
       }
-      if (!$node_table) { // final desperate guess ...
+      if (!$node_table) {
+        // Final desperate guess ...
         $node_table = 'node';
       }
     }
@@ -35,9 +36,11 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
         case REVISION_ARCHIVED:
           $subclauses[] = "($revisions_table.vid<$node_table.vid)";
           break;
+
         case REVISION_CURRENT:
           $subclauses[] = "($revisions_table.vid=$node_table.vid AND $node_table.status=1)";
           break;
+
         case REVISION_PENDING:
           $subclauses[] = "($revisions_table.vid>$node_table.vid OR ($node_table.status=0 AND (SELECT COUNT(vid) FROM {" . $revisions_table . "} WHERE nid=$node_table.nid)=1))";
           break;
@@ -52,7 +55,10 @@ class revisioning_handler_filter_revision_state extends views_handler_filter_in_
     }
   }
 
-  function get_value_options() {
+  /**
+   * Get value options.
+   */
+  public function get_value_options() {
     $this->value_title = t('Revision state');
     $this->value_options = revisioning_revision_states();
   }

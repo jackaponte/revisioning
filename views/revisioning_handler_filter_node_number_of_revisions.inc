@@ -2,7 +2,7 @@
 
 /**
  * @file
- *   Views filter override to filter on the number of revisions a node has.
+ * Views filter override to filter on the number of revisions a node has.
  */
 
 class revisioning_handler_filter_node_number_of_revisions extends views_handler_filter_numeric {
@@ -10,7 +10,7 @@ class revisioning_handler_filter_node_number_of_revisions extends views_handler_
   /**
    * Override the query, in particular the WHERE clause.
    */
-  function query() {
+  public function query() {
     if (empty($this->value)) {
       return;
     }
@@ -31,7 +31,7 @@ class revisioning_handler_filter_node_number_of_revisions extends views_handler_
       }
       $this->query->add_where_expression($this->options['group'], $where_expression);
 
-    //$this->{$info[$this->operator]['method']}($where_expression); // can't use sanitizes
+    // $this->{$info[$this->operator]['method']}($where_expression); // can't use sanitizes.
     }
   }
 }
