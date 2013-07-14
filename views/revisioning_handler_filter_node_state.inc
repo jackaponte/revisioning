@@ -2,7 +2,8 @@
 
 /**
  * @file
- * Views filter override to filter on node state, i.e. pending, archived, current.
+ * Views filter override to filter on node state, i.e. pending, archived or
+ * current.
  */
 
 class revisioning_handler_filter_node_state extends views_handler_filter_in_operator {

@@ -99,7 +99,8 @@ function revisioning_events_argument_current_revision($arguments, $name, $info) 
 /**
  * Target revision author argument handler.
  *
-function revisioning_events_argument_target_revision_author($arguments, $name, $info) {
+function revisioning_events_argument_target_revision_author($arguments,
+$name, $info) {
   global $user;
   $node = $arguments['node'];
   return $user; // user_load($node->revision_uid);
@@ -110,9 +111,10 @@ function revisioning_events_argument_node_author($arguments, $name, $info) {
   return user_load($node->uid);
 }
 
-function revisioning_events_argument_current_revision_author($arguments, $name, $info) {
+function revisioning_events_argument_current_revision_author($arguments, $name,
+$info) {
   $node = $arguments['node'];
-  $current_vid = $node->current_revision_id; // revisioning_get_current_node_revision_id($node->nid);
+  $current_vid = $node->current_revision_id;
   if ($node->vid != $current_vid) {
     $current = node_load($node->nid, $current_vid);
     return user_load($current->revision_uid);

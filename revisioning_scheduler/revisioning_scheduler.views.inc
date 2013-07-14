@@ -26,14 +26,14 @@ function revisioning_scheduler_views_data() {
 
   // For other base tables (node_revision, users), explain how we join.
   $data['revisioning_scheduler']['table']['join'] = array(
-    // Directly links to node_revision table.
-    // See also relationship details at $data['revisioning_scheduler']['revision_vid']
+    // Directly links to node_revision table. See also relationship details at
+    // $data['revisioning_scheduler']['revision_vid'].
     'node_revision' => array(
       'left_field' => 'vid',
       'field' => 'revision_vid',
     ),
-    // Directly links to the users table.
-    // See also relationship details at $data['revisioning_scheduler']['revision_uid']
+    // Directly links to the users table. See also relationship details at
+    // $data['revisioning_scheduler']['revision_uid'].
     'users' => array(
       'left_field' => 'uid',
       'field' => 'revision_uid',

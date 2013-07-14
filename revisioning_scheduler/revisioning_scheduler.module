@@ -33,7 +33,6 @@ function revisioning_scheduler_menu() {
  */
 function revisioning_scheduler_admin_configure() {
   $date_format = variable_get('revisioning_scheduler_date_format');
-  // Or variable_get('date_format_short', REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT); ?
   $default_date_format = REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT;
   if (empty($date_format)) {
     $date_format = $default_date_format;
@@ -49,7 +48,7 @@ function revisioning_scheduler_admin_configure() {
     '#size' => 25,
     '#title' => t('Format used for entering publication dates'),
     '#default_value' => $date_format,
-    '#description' =>  $help_text . '<br/>' . ($date_format == $default_date_format
+    '#description' => $help_text . '<br/>' . ($date_format == $default_date_format
       ? t('The default input format %date_format is used. <br/>Time now in this format: %date.', $t_args)
       : t('Time now in above format: %date <br/>If left blank the date input format defaults to %date_format', $t_args)
     ),
@@ -85,7 +84,8 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
         return;
       }
       if (empty($node->revision_moderation) && !(empty($node->nid) && revisioning_content_is_moderated($node->type, $node))) {
-        // No moderation specified and not a new node of a type subject to moderation.
+        // No moderation specified and not a new node of a type subject to
+        // moderation.
         return;
       }
       if (!revisioning_user_node_access('publish revisions', $node)) {
@@ -101,9 +101,13 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
     if (empty($date_format)) {
       $date_format = REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT;
     }
-    $description = t('Please use this format: %format, e.g %datetime. If you enter "now" this content will be published immediately.',
-      array('%format' => $date_format,'%datetime' => format_date(time(), 'custom', $date_format)))
-      . ' ' . t('If you do not wish to schedule publication, leave the field blank.');
+    $description1 = t('Please use this format: %format, e.g %datetime. If you enter "now" this content will be published immediately.',
+      array(
+        '%format' => $date_format,
+        '%datetime' => format_date(time(), 'custom', $date_format),
+      )
+    );
+    $description2 = t('If you do not wish to schedule publication, leave the field blank.');
 
     if (isset($node->vid)) {
       $result = db_query('SELECT * FROM {revisioning_scheduler} WHERE revision_vid = :vid',
@@ -118,7 +122,7 @@ function revisioning_scheduler_form_node_form_alter(&$form, &$form_state, $form_
       '#size' => 25,
       '#maxlength' => 25,
       '#title' => t('Optionally schedule a date and time for publication'),
-      '#description' => $description,
+      '#description' => $description1 . ' ' . $description2,
       '#default_value' => $scheduled_datetime,
       '#weight' => 10,
       '#attributes' => array('class' => array('publication-date')),
@@ -210,7 +214,8 @@ function revisioning_publish_confirm_validate($node, &$form) {
   else {
     $time = check_plain($_POST['revisioning_scheduler_time']);
     $scheduled_time = strtotime($date . $time);
-    // Add 90 seconds of slack to give user a chance to publish instantly by leaving time as is.
+    // Add 90 seconds of slack to give user a chance to publish instantly by
+    // leaving time as is.
     if ($scheduled_time < time() - REVISIONING_SCHEDULER_SLACK) {
       form_set_error('revisioning_scheduler_time', t('The publication time you set is in the past.'));
     }
@@ -387,7 +392,7 @@ function _revisioning_scheduler_schedule_publication($date, $time, $node) {
 /**
  * Delete all scheduled publication dates for this node, if any.
  *
- * @param $nid
+ * @param int $nid
  *   the unique node id
  */
 function _revisioning_scheduler_unschedule_all_revisions($nid) {
@@ -409,7 +414,6 @@ function _revisioning_scheduler_unschedule($vid) {
     ->condition('revision_vid', $vid)
     ->execute();
 }
-
 
 /**
  * Register View API information.

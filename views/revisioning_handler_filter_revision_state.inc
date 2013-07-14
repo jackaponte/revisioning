@@ -1,7 +1,7 @@
 <?php
-
 /**
- * @file revisioning_handler_filter_revision_state.inc
+ * @file
+ * revisioning_handler_filter_revision_state.inc
  * 
  * Views filter override to filter on revision state, i.e. pending, archived or
  * current.

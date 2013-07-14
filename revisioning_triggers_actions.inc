@@ -17,7 +17,7 @@ function revisioning_trigger_info() {
     // We could use 'node', which means that these triggers will apprear under
     // the node tab, /admin/structure/trigger/node
     // Second key has no functional meaning as the actual invocation of the
-    // trigger is in the code, typically via module_invoke_all('some_op', $node);
+    // trigger is in code, typically via module_invoke_all('some_op', $node);
     // For clarity we have chosen the names below to equal 'some_op'.
     // Revisioning's implementations of hook_some_op are further down in this
     // file.
@@ -68,11 +68,12 @@ function revisioning_revision_revert($revision) {
  * Execute all actions associated with the supplied trigger.
  *
  * @param object $revision
- *  the node object as passed in from revisioning_revisionapi();
- *  if omitted this function will try to load the node object based on the URL
+ *   the node object as passed in from revisioning_revisionapi();
+ *   if omitted this function will try to load the node object based on the URL
+ *
  * @param string $hook
- *  trigger name, as passed in from revisioning_revision_hook() above, ie. one
- *  of 'revision_publish', 'revision_unpublish' or 'revision_revert'.
+ *   trigger name, as passed in from revisioning_revision_hook() above, ie. one
+ *   of 'revision_publish', 'revision_unpublish' or 'revision_revert'.
  */
 function revisioning_action_revision_trigger($revision, $hook) {
   if (!module_exists('trigger')) {
@@ -148,7 +149,6 @@ function revisioning_action_info() {
       'type' => 'node',
       'label' => t('Delete archived revisions'),
       'configurable' => FALSE,
-      // Also array('node_update') ?
       'triggers' => array('any'),
     ),
     'revisioning_publish_latest_revision_action' => array(
@@ -160,7 +160,6 @@ function revisioning_action_info() {
       // 'behavior' => array('changes_property'),
       // Unlike 'node_publish_action', this is NOT a 'node_presave' action:
       'triggers' => array('any'),
-      // Also array('node_insert', 'node_update').
     )
   );
   return $action_info;

@@ -27,16 +27,18 @@ function revisioning_update_taxonomy_index($node, $show_unpublished_content_term
     // First, delete all term id's associated with this node.
     db_delete('taxonomy_index')->condition('nid', $node->nid)->execute();
     // Use of taxonomy_delete_node_index($node); requires core 7.12 or later
-    // Then add terms if the node is published OR terms are requested explicitly.
+    // Then add terms if node is published OR terms are requested explicitly.
     if ($node->status || $show_unpublished_content_terms) {
-      $vid = empty($node->revision_moderation) || empty($node->current_revision_id)
-        ? $node->vid : $node->current_revision_id;
+      $vid = empty($node->revision_moderation) || empty($node->current_revision_id) ? $node->vid : $node->current_revision_id;
       // Find all the terms attached to this node revision.
       $tids = revisioning_get_tids($vid);
       if (!empty($tids)) {
-        // Core, via taxonomy_node_update(), only does this when the node is published,
-        // but then we can't see the terms of unpublished content in Views!
-        $query = db_insert('taxonomy_index')->fields(array('nid', 'tid', 'sticky', 'created'));
+        // Core, via taxonomy_node_update(), only does this when node is
+        // published, but then we can't see the terms of unpublished content
+        // in Views!
+        $query = db_insert('taxonomy_index')->fields(
+          array('nid', 'tid', 'sticky', 'created')
+        );
         foreach ($tids as $tid) {
           $query->values(array(
             'nid' => $node->nid,

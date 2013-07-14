@@ -83,7 +83,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
       '#markup' => $first_cell,
     );
 
-    // Third & fourth columns: term (2nd column is handled below)
+    // Third & fourth columns: term (2nd column is handled below).
     if (!empty($revision->tags)) {
       $form['tags'][$vid] = array(
         '#type' => 'item',
@@ -248,7 +248,7 @@ function theme_revisioning_revisions_summary($variables) {
       $row[] = filter_xss(drupal_render($form['term'][$vid]));
     }
 
-    // column #4: Publication status.
+    // Column #4: Publication status.
     $is_current = ($vid == $node->vid);
     $is_pending = ($vid > $node->vid) || $is_initial_unpublished_draft;
     if ($is_pending) {
@@ -257,9 +257,6 @@ function theme_revisioning_revisions_summary($variables) {
     else {
       $status = array('data' => $is_current && $node->status ? drupal_placeholder(t('current revision (published)')) : t('archived'));
     }
-    // if (user_access('administer nodes')) { // debug
-    //   $status['data'] .= ' [status=' . $form['status'][$vid]['#value'] . ']';
-    // }
     $row[] = $status;
 
     // Apply CSS class.
@@ -293,7 +290,7 @@ function theme_revisioning_revisions_summary($variables) {
 /**
  * Implement (in your own module) the function below if you want to override
  * the way in which the Revisions table is constructed.
- * If you do, don't forget to register this theme_hook() via <your_module>_theme()
+ * If you do, don't forget to register this theme_hook() via <module>_theme()
  * in a manner similar to revisioning_theme() in this file.
  *
  * @param $header
@@ -305,7 +302,7 @@ function theme_revisioning_revisions_summary($variables) {
  *
 function theme_table_revisions($header, $rows) {
 }
- */
+*/
 
 /**
  * Theme the revisions summary of the supplied node.
@@ -358,11 +355,7 @@ function _revisioning_generate_node_links_according_to_permissions($node, $link_
   }
   if (_revisioning_access_node_revision('delete node', $node)) {
     // Avoiding format_plural see [#557050].
-    $text =
-      (empty($node->revision_moderation) || $node->num_revisions == 1)
-      ? t('Delete')
-      : t('Delete all');
-    // Old: ($node->num_revisions == 2 ? t('Delete both revisions') : t('Delete all @count revisions', array('@count' => $node->num_revisions))); ?
+    $text = (empty($node->revision_moderation) || $node->num_revisions == 1) ? t('Delete') : t('Delete all');
     $themed_links[] = l($text, "node/$nid/delete");
   }
   return $themed_links;

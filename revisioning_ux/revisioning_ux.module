@@ -31,13 +31,9 @@ function revisioning_ux_module_implements_alter(&$implementations, $hook) {
  */
 function revisioning_ux_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'revisioning_revisions_summary') {
-    // $node = node_load($form['nid']['#value']);
     $vid = arg(3);
     if (is_numeric($vid)) {
-      $form['info'][$vid]['#markup'] =
-        "<div class='revisions-active'>" .
-        $form['info'][$vid]['#markup'] .
-        "</div>";
+      $form['info'][$vid]['#markup'] = '<div class="revisions-active">' . $form['info'][$vid]['#markup'] . '</div>';
       drupal_add_css(drupal_get_path('module', 'revisioning_ux') . '/revisioning_ux.css');
     }
   }
@@ -97,16 +93,20 @@ function revisioning_ux_page_alter(&$page) {
  * the various Revisioning Operations pages remain consistent.
  */
 function revisioning_ux_menu_alter(&$items) {
-  // Put back the standard access callback (remove revisioning callback that hides 'View' and 'Edit').d
+  // Put back the standard access callback (remove revisioning callback that
+  // hides 'View' and 'Edit').
   $items['node/%node']['access callback'] = 'node_access';
-  $items['node/%node/revisions']['page arguments'] = array(1, $items['node/%node/revisions']['page callback']);
+  $items['node/%node/revisions']['page arguments'] =
+    array(1, $items['node/%node/revisions']['page callback']);
   $items['node/%node/revisions']['page callback'] = '_revisioning_ux_revisioning_redirect';
   $items['node/%node/revisions']['title callback'] = '_revisioning_ux_revisioning_title_for_tab';
   unset($items['node/%node/revisions/list']);
   $items['node/%node/revisions/%vid/view']['title callback'] = '_revisioning_ux_revisioning_title_for_edit_and_view';
-  $items['node/%node/revisions/%vid/view']['title arguments'] = array(1, 3, 'view');
+  $items['node/%node/revisions/%vid/view']['title arguments'] =
+    array(1, 3, 'view');
   $items['node/%node/revisions/%vid/edit']['title callback'] = '_revisioning_ux_revisioning_title_for_edit_and_view';
-  $items['node/%node/revisions/%vid/edit']['title arguments'] = array(1, 3, 'edit');
+  $items['node/%node/revisions/%vid/edit']['title arguments'] =
+    array(1, 3, 'edit');
 }
 
 /**
@@ -241,10 +241,7 @@ function revisioning_ux_delete_archived_submit(&$form, &$form_state) {
  * Form builder: Delete all.
  */
 function revisioning_ux_delete_all($form, $form_state, $node) {
-  $text =
-    (empty($node->revision_moderation) || $node->num_revisions == 1)
-    ? t('Delete')
-    : t('Delete all');
+  $text = (empty($node->revision_moderation) || $node->num_revisions == 1) ? t('Delete') : t('Delete all');
   $form = array();
   $form['node'] = array(
     '#type' => 'value',

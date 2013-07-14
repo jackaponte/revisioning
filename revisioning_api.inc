@@ -74,8 +74,8 @@ function revisioning_get_number_of_revisions($nid) {
 /**
  * Get the number of archived revisions belonging to a node.
  *
- * @param object $nid
- *   id of the node
+ * @param object $node
+ *   the node object
  *
  * @return int
  *   A count representing the number of archived revisions for the node
@@ -142,9 +142,7 @@ function revisioning_get_current_node_revision_id($nid) {
  *   A single number being the user id (uid).
  */
 function revisioning_get_last_editor($nid, $current = FALSE) {
-  $sql = ($current)
-    ? "SELECT vid FROM {node} WHERE nid = :nid"
-    : "SELECT MAX(vid) FROM {node_revision} WHERE nid = :nid";
+  $sql = ($current) ? "SELECT vid FROM {node} WHERE nid = :nid" : "SELECT MAX(vid) FROM {node_revision} WHERE nid = :nid";
   $vid = db_query($sql, array(':nid' => $nid))->fetchField();
   $result = db_query("SELECT uid FROM {node_revision} WHERE vid = :vid", array(':vid' => $vid));
   return $result->fetchField();
@@ -277,9 +275,6 @@ function revisioning_revisionapi($op, $node) {
       }
       break;
 
-    // case 'pre unpublish':
-    // Not implemented: do we really need it ?
-
     case 'post unpublish':
       // Called from _revisioning_unpublish_revision().
       // Invoke hook_revision_unpublish triggers passing the node as an arg.
@@ -337,7 +332,8 @@ function revisioning_get_latest_revision_id($nid) {
  * @param object|int $node
  *   Target $node object (loaded with target revision) or nid of target node
  * @param int $vid
- *   (optional) vid of revision to revert to, if provided $node must not be an object.
+ *   (optional) vid of revision to revert to, if provided $node must not be an
+ *   object.
  */
 function _revisioning_revertpublish_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
@@ -359,7 +355,8 @@ function _revisioning_revertpublish_revision(&$node, $vid = NULL) {
  * @param object|int $node
  *   Target $node object (loaded with target revision) or nid of target node
  * @param int $vid
- *   (optional) vid of revision to revert to, if provided $node is not an object.
+ *   (optional) vid of revision to revert to, if provided $node is not an
+ *   object.
  */
 function _revisioning_revert_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
@@ -369,13 +366,17 @@ function _revisioning_revert_revision(&$node, $vid = NULL) {
     $node_revision->taxonomy = array_keys($node_revision->taxonomy);
   }
   node_save($node_revision);
-  watchdog('content', '@type: reverted %title revision %revision.', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid));
+  watchdog('content', '@type: reverted %title revision %revision.', array(
+    '@type' => $node_revision->type,
+    '%title' => $node_revision->title,
+    '%revision' => $node_revision->vid,
+  ));
 }
 
 /**
  * Unpublish node, without calling node_save().
  *
- * @param object|int $node
+ * @param object|int $nid_or_node
  *   Target $node object or nid of target node
  * @param bool $clear_cache
  *   Whether to clear the cache afterwards or not. Clearing the cache on every
@@ -404,7 +405,7 @@ function _revisioning_unpublish_node($nid_or_node, $clear_cache = TRUE) {
       // So that pathauto_node_update() does nothing.
       'alias' => '',
       // So that pathauto_node_update() does nothing.
-      'pathauto' => FALSE
+      'pathauto' => FALSE,
     );
   }
   elseif (!isset($node->path['alias'])) {
@@ -445,7 +446,11 @@ function _revisioning_delete_revision(&$node, $vid = NULL) {
   db_delete('node_revision')
     ->condition('vid', $node_revision->vid)
     ->execute();
-  watchdog('content', '@type: deleted %title revision %revision.', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid));
+  watchdog('content', '@type: deleted %title revision %revision.', array(
+    '@type' => $node_revision->type,
+    '%title' => $node_revision->title,
+    '%revision' => $node_revision->vid,
+  ));
   module_invoke_all('revisionapi', 'post delete', $node_revision);
 }
 
@@ -474,7 +479,7 @@ function _revisioning_unpublish_revision(&$node) {
  * to publish this revision.
  *
  * @param int $node_revision
- *  Target $node object (loaded with target revision)
+ *   Target $node object (loaded with target revision)
  * @param bool $clear_cache
  *   Whether to clear the cache afterwards or not. Clearing the cache on every
  *   node during bulk operations can be time-consuming.
@@ -486,7 +491,8 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
     die;
   }
-  // Update {node} and {node_revision} tables, setting the "published" (ie. status) flag.
+  // Update {node} and {node_revision} tables, setting the "published" (ie.
+  // status) flag.
   db_update('node')
     ->fields(array(
       'vid' => $node_revision->vid,
@@ -514,7 +520,7 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
       // So that path_node_update() does nothing.
       'alias' => '',
       // So that pathauto_node_update() does nothing.
-      'pathauto' => FALSE
+      'pathauto' => FALSE,
     );
   }
   elseif (!isset($node_revision->path['alias'])) {
@@ -551,7 +557,15 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
     cache_clear_all();
   }
 
-  watchdog('content', 'Published rev #%revision of @type %title', array('@type' => $node_revision->type, '%title' => $node_revision->title, '%revision' => $node_revision->vid), WATCHDOG_NOTICE, l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view"));
+  watchdog('content', 'Published rev #%revision of @type %title',
+    array(
+      '@type' => $node_revision->type,
+      '%title' => $node_revision->title,
+      '%revision' => $node_revision->vid,
+    ),
+    WATCHDOG_NOTICE,
+    l(t('view'), "node/$node_revision->nid/revisions/$node_revision->vid/view")
+  );
   module_invoke_all('revisionapi', 'post publish', $node_revision);
 }
 
@@ -602,9 +616,9 @@ function _revisioning_publish_latest_revision(&$node) {
  * Return a count of the number of revisions newer than the supplied vid.
  *
  * @param int $vid
- *  The reference vid.
+ *   The reference vid.
  * @param int $nid
- *  The id of the node.
+ *   The id of the node.
  *
  * @return int
  *  count of the number of revisions newer than the supplied vid
@@ -639,11 +653,11 @@ function _revisioning_get_number_of_pending_revisions($nid) {
  * Retrieve a list of revisions with a vid greater than the current.
  *
  * @param int $nid
- *  The node id to retrieve.
+ *   The node id to retrieve.
  *
  * @return array
- *  An array of revisions (latest first), each containing vid, title and
- *  content type.
+ *   An array of revisions (latest first), each containing vid, title and
+ *   content type.
  */
 function _revisioning_get_pending_revisions($nid) {
   $sql = "SELECT r.vid, r.title, n.type FROM {node} n INNER JOIN {node_revision} r ON n.nid = r.nid WHERE (r.vid > n.vid AND n.nid = :nid) ORDER BY r.vid DESC";
@@ -709,9 +723,9 @@ function _revisioning_node_info_msg($node) {
  * Return TRUE only if the user account has ALL of the supplied permissions.
  *
  * @param array $permissions
- *  An array of permissions (strings)
+ *   An array of permissions (strings)
  * @param object $account
- *  (optional) The user account object. Defaults to the current user if omitted.
+ *   (optional) The user account object. Defaults to the current user if omitted.
  *
  * @return bool
  *   Whether the user has access to all permissions
@@ -758,14 +772,14 @@ define('NO_FILTER', '-1');
  *   (optional) Only return content created by the user with the supplied id.
  *   Defaults to -1, which means don't care who the creator is.
  * @param int $modifier_uid
- *   (optional) Only return content last modified by the user with the supplied id.
+ *   (optional) Only return content last modified by user with the supplied id.
  *   Defaults to -1, which means don't care who last modifed the node.
  * @param bool|int $is_moderated
- *   (optional) TRUE to return only content of types that are subject to moderation
+ *   (optional) TRUE to return only content of types subject to moderation
  *   FALSE to return only content that isn't subject to moderation
  *   -1 (default) no filter, return content regardles of moderation flag
  * @param bool $is_pending
- *   (optional) Boolean indicating whether only nodes pending publication should be
+ *   (optional) bool indicating whether only nodes pending publication should be
  *   returned; a pending node is defined as a node that has a revision newer
  *   than the current OR a node with a single revision that is not published.
  * @param int $max
@@ -813,7 +827,8 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
   $node_query_result = db_query_range($sql, 0, $max);
   $revisions = array();
   foreach ($node_query_result as $revision) {
-    // Need to set revision_moderation for revisioning_node_access() to work properly
+    // Need to set revision_moderation for revisioning_node_access() to work
+    // properly.
     $revision->revision_moderation = revisioning_content_is_moderated($revision->type/*, $revision*/);
 
     $filter = ($is_moderated < 0) || ($is_moderated == $revision->revision_moderation);
@@ -828,7 +843,8 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
         $existing_revision = $revisions[$revision->vid];
         if (!empty($revision->term)) {
           if (strpos($existing_revision->term, $revision->term) === FALSE) {
-            // Bit of a quick & dirty -- goes wrong if a term is substr of another.
+            // Bit of a quick & dirty -- goes wrong if a term is substr of
+            // another.
             $existing_revision->term .= ", $revision->term";
           }
         }
@@ -888,7 +904,8 @@ function _revisioning_get_all_revisions_for_node($nid, $include_taxonomy_terms =
       $existing_revision = $revisions[$revision->vid];
       if (!empty($revision->term)) {
         if (strpos($existing_revision->term, $revision->term) === FALSE) {
-          // Bit of a quick & dirty -- goes wrong if a term is substr of another.
+          // Bit of a quick & dirty -- goes wrong if a term is substr of
+          // another.
           $existing_revision->term .= ", $revision->term";
         }
       }

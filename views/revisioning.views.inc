@@ -51,7 +51,8 @@ function revisioning_views_data_alter(&$data) {
     'filter' => array(
       'handler' => 'revisioning_handler_filter_node_number_of_revisions',
     ),
-    // Cannot support sort as 'number of revisions' cannot be expressed as ORDER BY clause.
+    // Cannot support sort as 'number of revisions' cannot be expressed as
+    // ORDER BY clause.
   );
 
   $data['node']['revision_moderation'] = array(
@@ -95,10 +96,4 @@ function revisioning_views_data_alter(&$data) {
       'handler' => 'revisioning_handler_filter_revision_latest_published',
     ),
   );
-}
-
-/**
- * Implements hook_views_query_alter().
- */
-function revisioning_views_query_alter(&$view, &$query) {
 }

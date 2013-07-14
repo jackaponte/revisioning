@@ -16,7 +16,7 @@ define('REVISIONING_NEW_REVISION_WITH_MODERATION', 2);
 // Paths node/%nid/view, node/%nid/edit open current revision.
 define('REVISIONING_LOAD_CURRENT', 0);
 // Paths node/%nid/view, node/%nid/edit open latest revison.
-define('REVISIONING_LOAD_LATEST',  1);
+define('REVISIONING_LOAD_LATEST', 1);
 
 define('REVISIONING_NEW_REVISION_WHEN_NOT_PENDING', 0);
 define('REVISIONING_NEW_REVISION_EVERY_SAVE', 1);
@@ -80,11 +80,6 @@ function revisioning_help($path, $arg) {
  * revisions already exist in node.module.
  */
 function revisioning_permission() {
-  $permissions = module_exists('module_grants_monitor')
-    ? array('access Pending tab' => array(
-      'title' => t('Access Pending tab'),
-      'description' => ''))
-    : array();
 
   $edit_description = t('Also requires edit permission from either the Node or other content access module(s).');
 
@@ -98,7 +93,7 @@ function revisioning_permission() {
     $publish_description .= ' <br/>' . $edit_description;
   }
 
-  $permissions = array_merge($permissions, array(
+  $permissions = array(
     'view revision status messages' => array(
       'title' => t('View revision status messages'),
       'description' => '',
@@ -115,7 +110,7 @@ function revisioning_permission() {
       'title' => t("Unpublish current revision (of anyone's content)"),
       'description' => $publish_description,
     ),
-  ));
+  );
   // Add per node-type view permissions in same way as edit permissions of node
   // module, but only for moderated content-types.
   foreach (node_type_get_types() as $type) {
@@ -386,8 +381,7 @@ function revisioning_node_load($nodes, $types) {
   // access control when taxonomy feeds are displayed.
   // See also revisioning_update_taxonomy_index().
   //
-  $double_check_access =
-    strpos($_GET['q'], 'taxonomy/term') === 0 &&
+  $double_check_access = (strpos($_GET['q'], 'taxonomy/term') === 0) &&
     variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE);
 
   // At this point status, comment, promote and sticky have been set on all of
@@ -488,6 +482,11 @@ function revisioning_preprocess_node(&$variables) {
   }
 }
 
+/**
+ * Output a status message, provided teh user has the required permission.
+ *
+ * @param string $message
+ */
 function revisioning_set_status_message($message) {
   if (user_access('view revision status messages')) {
     drupal_set_message(filter_xss($message), 'status');
@@ -557,7 +556,8 @@ function revisioning_node_presave($node) {
   }
 
   if (!isset($node->nid)) {
-    // New node, if moderated without Auto-publish, ignore the default Publish tickbox.
+    // New node, if moderated without Auto-publish, ignore the default Publish
+    // tickbox.
     if (isset($node->revision_moderation) && $node->revision_moderation == TRUE) {
       $node->status = NODE_NOT_PUBLISHED;
     }
@@ -694,10 +694,7 @@ function revisioning_node_insert($node) {
   revisioning_update_taxonomy_index($node, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
 
   if (!empty($node->revision_moderation)) {
-    revisioning_set_status_message($node->status
-      ? t('Initial revision created and published.')
-      : t('Initial draft created, pending publication.')
-    );
+    revisioning_set_status_message($node->status ? t('Initial revision created and published.') : t('Initial draft created, pending publication.'));
   }
 
   // Add revision usage records to files to prevent them being deleted.

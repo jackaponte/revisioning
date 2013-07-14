@@ -83,7 +83,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       if (revisioning_get_number_of_revisions($nid) > 1) {
         // Special treatment for Delete button when there are >= 2 revisions.
         if ($form['#node']->vid == revisioning_get_current_node_revision_id($nid)) {
-          // Make it obvious to the user that a 'Delete' is in fact 'Delete all'.
+          // Make it obvious to user that a 'Delete' is in fact 'Delete all'.
           $form['actions']['delete']['#value'] = t('Delete (all revisions)');
         }
         elseif (user_access('delete revisions')) {
@@ -124,7 +124,7 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
       REVISIONING_NEW_REVISION_EVERY_SAVE => t('Every time %type content is updated, even when saving content in draft/pending moderation', array('%type' => $content_type))),
     '#default_value' => (int) variable_get('new_revisions_' . $content_type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING),
     '#description' => t('Use less disk space and avoid cluttering your revisions list. With the first option ticked, modifications are saved to the same copy (i.e. no additional revisions are created) until the content is published.'),
-    );
+  );
   $form['workflow']['revisioning']['revisioning_auto_publish'] = array(
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
@@ -231,10 +231,10 @@ function revisioning_form_node_revision_revert_confirm_alter(&$form, &$form_stat
 /**
  * Implements hook_form_FORM_ID_alter().
  *
- * @see node_revision_delete_confirm()
- *
  * We only add "pre" submit handler, because "post delete" event is already
  * available via hook_nodeapi().
+ * 
+ * @see node_revision_delete_confirm()
  */
 function revisioning_form_node_revision_delete_confirm_alter(&$form, &$form_state) {
   array_unshift($form['#submit'], 'revisioning_revision_delete_confirm_pre_submit');
