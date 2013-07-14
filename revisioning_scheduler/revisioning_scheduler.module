@@ -3,9 +3,10 @@
  * @file
  * Allows revisions to be published at specified dates and times.
  *
- * @author Zombienaute (drupal.org),aka Adam Bramley <adam@catalyst.net.nz>
- * @author zepner (drupal.org)
- * @author RdeBoer (drupal.org)
+ * Authors:
+ * Zombienaute (drupal.org),aka Adam Bramley <adam@catalyst.net.nz>
+ * zepner (drupal.org)
+ * RdeBoer (drupal.org)
  */
 
 define('REVISIONING_SCHEDULER_DEFAULT_DATE_FORMAT', 'd-m-Y H:i');

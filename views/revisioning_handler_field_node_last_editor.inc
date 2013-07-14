@@ -26,7 +26,8 @@ class revisioning_handler_field_node_last_editor extends views_handler_field {
    * Help build the query.
    */
   public function query() {
-    // Not calling parent::query() as it will treat 'last_editor' as a real db field.
+    // Not calling parent::query() as it will treat 'last_editor' as a real db
+    // field.
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
@@ -44,7 +45,7 @@ class revisioning_handler_field_node_last_editor extends views_handler_field {
    * Consider this performance improvement from [#1852680].
    * Not tested.
    *
-  function pre_render($values) {
+    function pre_render($values) {
     // Collect Nodes
     $nids = array();
     foreach ($values as $row) {
@@ -79,5 +80,5 @@ class revisioning_handler_field_node_last_editor extends views_handler_field {
     $nid = $values->{$this->aliases['nid']};
     return isset($this->uids[$nid])? $this->uids[$nid] : '';
   }
-   */
+  */
 }

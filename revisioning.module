@@ -9,20 +9,20 @@
  */
 
 // The 3 states a piece of content may be saved as.
-define('NO_REVISION', 0);
-define('NEW_REVISION_NO_MODERATTION', 1);
-define('NEW_REVISION_WITH_MODERATION', 2);
+define('REVISIONING_NO_REVISION', 0);
+define('REVISIONING_NEW_REVISION_NO_MODERATION', 1);
+define('REVISIONING_NEW_REVISION_WITH_MODERATION', 2);
 
 // Paths node/%nid/view, node/%nid/edit open current revision.
 define('REVISIONING_LOAD_CURRENT', 0);
 // Paths node/%nid/view, node/%nid/edit open latest revison.
 define('REVISIONING_LOAD_LATEST',  1);
 
-define('NEW_REVISION_WHEN_NOT_PENDING', 0);
-define('NEW_REVISION_EVERY_SAVE', 1);
+define('REVISIONING_NEW_REVISION_WHEN_NOT_PENDING', 0);
+define('REVISIONING_NEW_REVISION_EVERY_SAVE', 1);
 
-define('REVISIONS_BLOCK_OLDEST_AT_TOP', 0);
-define('REVISIONS_BLOCK_NEWEST_AT_TOP', 1);
+define('REVISIONING_REVISIONS_BLOCK_OLDEST_AT_TOP', 0);
+define('REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP', 1);
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_api.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.pages.inc';
@@ -125,17 +125,10 @@ function revisioning_permission() {
         'title' => t('%type-name: View revisions of own content', array('%type-name' => $type->name)));
       $permissions['view revisions of any ' . $machine_name . ' content'] = array(
         'title' => t("%type-name: View revisions of anyone's content", array('%type-name' => $type->name)));
-        // $permissions['edit revisions of own ' . $machine_name . ' content'] = array(
-        //   'title' => t('%type-name: Edit revisions of own content', array('%type-name' => $type->name)),
-        //   'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
-        // $permissions['edit revisions of any ' . $machine_name . ' content'] = array(
-        //   'title' => t('%type-name: Edit revisions of any content', array('%type-name' => $type->name)),
-        //   'description' => t('Grants update access to published as well as unpublished %type-name content.', array('%type-name' => $type->name)));
       $permissions['publish revisions of own ' . $machine_name . ' content'] = array(
         'title' => t('%type-name: Publish revisions of own content', array('%type-name' => $type->name)));
       $permissions['publish revisions of any ' . $machine_name . ' content'] = array(
         'title' => t("%type-name: Publish revisions of anyone's content", array('%type-name' => $type->name)));
-
     }
   }
   return $permissions;
@@ -175,8 +168,6 @@ function revisioning_menu() {
   // All revision operations 'node/%node/revisions/%vid/<op>' are defined as
   // local subtasks (subtabs) secondary to the primary 'node/%node/revisions'
   // local task (primary tab).
-  // Note the use of %vid as opposed to %. This allows us to manipulate the
-  // second argument in the path through vid_to_arg().
   //
   // Subtab to the Revisions primary tab to allow going back to the revisions
   // list without clicking the primary tab for a second time, which also works.
@@ -198,6 +189,8 @@ function revisioning_menu() {
   );
 
   // View revision local subtask.
+  // Note the use of %vid as opposed to %. This allows us to manipulate the
+  // second argument in the path through vid_to_arg().
   $items['node/%node/revisions/%vid/view'] = array(
     'title' => 'View',
     'load arguments' => array(3),
@@ -374,11 +367,14 @@ function vid_to_arg($arg, &$map, $index) {
  * The same load op may occur multiple times during the same HTTP request, so
  * hooray for caching!
  *
- * hook_node_load is called when viewing a single node (i.e. $nodes has one element)
- * node_load() -> node_load_multiple() -> DrupalDefaultEntityController->attachLoad()
+ * hook_node_load is called when viewing a single node
+ * node_load() -> node_load_multiple() ->
+ * DrupalDefaultEntityController->attachLoad()
  *
  * hook_node_load is also called on the /content summary page:
- * node_admin_nodes() -> node_load_multiple() -> DrupalDefaultEntityController->attachLoad()
+ * node_admin_nodes() -> node_load_multiple() ->
+ * DrupalDefaultEntityController->attachLoad()
+ * 
  * We do nothing in this 2nd case.
  */
 function revisioning_node_load($nodes, $types) {
@@ -409,11 +405,12 @@ function revisioning_node_load($nodes, $types) {
       if (!empty($node->revision_moderation) && !empty($node->is_current)) {
         // Hack!
         // Because of core issue [#1120272/#542290], if the current revision is
-        // loaded, $node fields may in fact be those belonging to LATEST revision.
+        // loaded, $node fields may in fact be those belonging to LATEST
+        // revision.
         // So reload with FIELD_LOAD_REVISION. We can rely on $node->vid, that
         // attribute is set correctly.
-        // Make sure to unset the already loaded fields or we end up with 2 copies
-        // of each field, e.g. 2 bodies, 2 tags, 2 image attachments etc.
+        // Make sure to unset the already loaded fields or we end up with 2
+        // copies of each field, e.g. 2 bodies, 2 tags, 2 image attachments etc.
         list($nid, $vid, $bundle) = entity_extract_ids('node', $node);
         $instances = _field_invoke_get_instances('node', $bundle, array('deleted' => FALSE));
         foreach ($instances as $instance) {
@@ -522,20 +519,29 @@ function revisioning_node_prepare($node) {
  *
  * Note that the following may be set programmatically on the $node object
  * before calling node_save($node):
+ *
  * o $node->revision_operation, one of:
- *   NO_REVISION ($node->revision == $node->revision_moderation == FALSE)
- *   NEW_REVISION_NO_MODERATION ($node->revision == TRUE, $node->revision_moderation == FALSE)
- *   NEW_REVISION_WITH_MODERATION ($node->revision == $node->revision_moderation == TRUE)
+ *
+ *   REVISIONING_NO_REVISION
+ *   ($node->revision == $node->revision_moderation == FALSE)
+ *
+ *   REVISIONING_NEW_REVISION_NO_MODERATION
+ *   ($node->revision == TRUE, $node->revision_moderation == FALSE)
+ *
+ *   REVISIONING_NEW_REVISION_WITH_MODERATION
+ *   ($node->revision == $node->revision_moderation == TRUE)
+ *
  * o $node->revision_condition (applies only to NEW_REVISION_WITH_MODERATION):
- *   NEW_REVISION_EVERY_SAVE
- *   NEW_REVISION_WHEN_NOT_PENDING
+ *
+ *   REVISIONING_NEW_REVISION_EVERY_SAVE
+ *   REVISIONING_NEW_REVISION_WHEN_NOT_PENDING
  */
 function revisioning_node_presave($node) {
   revisioning_set_node_revision_info($node);
 
   if (isset($node->revision_operation)) {
-    $node->revision = ($node->revision_operation > NO_REVISION);
-    $node->revision_moderation = ($node->revision_operation == NEW_REVISION_WITH_MODERATION);
+    $node->revision = ($node->revision_operation > REVISIONING_NO_REVISION);
+    $node->revision_moderation = ($node->revision_operation == REVISIONING_NEW_REVISION_WITH_MODERATION);
   }
 
   if (!empty($node->revision_moderation) && revisioning_user_may_auto_publish($node)) {
@@ -571,14 +577,14 @@ function revisioning_node_presave($node) {
     // May want to do this for auto_publish too, to provide $node->current... to
     // other modules, as a courtesy.
     if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
-      && variable_get('new_revisions_' . $node->type, NEW_REVISION_WHEN_NOT_PENDING) == NEW_REVISION_WHEN_NOT_PENDING) {
+      && variable_get('new_revisions_' . $node->type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) == REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) {
       revisioning_set_status_message(t('Updating existing draft, not creating new revision as this one is still pending.'));
       // To tell revisioning_node_update().
-      $node->revision_condition = NEW_REVISION_WHEN_NOT_PENDING;
+      $node->revision_condition = REVISIONING_NEW_REVISION_WHEN_NOT_PENDING;
     }
     if (isset($node->revision_condition)) {
       // Tell node_save() whether a new revision should be created.
-      $node->revision = ($node->revision_condition == NEW_REVISION_EVERY_SAVE);
+      $node->revision = ($node->revision_condition == REVISIONING_NEW_REVISION_EVERY_SAVE);
     }
 
     $result = db_query("SELECT status, title, comment, promote, sticky FROM {node_revision} WHERE vid = :vid",
@@ -643,7 +649,7 @@ function revisioning_node_update($node) {
   // Generate a 'post update' event in Rules.
   module_invoke_all('revisionapi', 'post update', $node);
 
-  // Add new revision usage records to files to prevent them being deleted - #1901272
+  // Add new revision usage records to files to prevent them being deleted.
   $fields = field_info_instances('node', $node->type);
   foreach ($fields as $field_name => $value) {
     $field_info = field_info_field($field_name);
@@ -652,7 +658,7 @@ function revisioning_node_update($node) {
       $file_fields[$field_name] = $value;
     }
   }
-  // Create file revision entries for files created using older revisioning versions.
+  // Create file revision entries for files created using older versions.
   $old_node = isset($node->original) ? $node->original : NULL;
   if (isset($old_node) && !empty($file_fields)) {
     foreach ($file_fields as $file_field) {
@@ -694,7 +700,7 @@ function revisioning_node_insert($node) {
     );
   }
 
-  // Add revision usage records to files to prevent them being deleted - #1901272
+  // Add revision usage records to files to prevent them being deleted.
   $fields = field_info_instances('node', $node->type);
   foreach ($fields as $field_name => $value) {
     $field_info = field_info_field($field_name);
@@ -823,7 +829,8 @@ function _revisioning_operation_appropriate($revision_op, $node) {
     case 'view revision list':
       // For i.e. node revisions summary.
       if (empty($node->revision_moderation) && isset($node->num_revisions) && $node->num_revisions == 1) {
-        // Suppress Revisions tab when when there's only 1 revision -- consistent with core.
+        // Suppress Revisions tab when when there's only 1 revision. This is
+        // consistent with core.
         // However, when content is moderated (i.e. "New revision in draft,
         // pending moderation" is ticked) we want to be able to get to the
         // 'Unpublish current' link on this page and the 'Publish' tab on
@@ -965,11 +972,11 @@ function _revisioning_view_edit_access_callback($op, $node) {
     // The View, Edit primary tabs are requested indirectly, in the context of
     // the secondary tabs under Revisions, e.g. node/%/revisions/%
     if ($load_op == REVISIONING_LOAD_CURRENT && $vid == $node->current_revision_id) {
-      // Suppress 'View current' and 'Edit current' primary tabs when viewing current.
+      // Suppress 'View current' and 'Edit current' tabs when viewing current.
       return FALSE;
     }
     if ($load_op == REVISIONING_LOAD_LATEST && $vid == revisioning_get_latest_revision_id($node->nid)) {
-      // Suppress 'View latest' and 'Edit latest' primary tabs when viewing latest.
+      // Suppress 'View latest' and 'Edit latest' tabs when viewing latest.
       return FALSE;
     }
   }
@@ -1008,7 +1015,7 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
     $load_op = ($op == 'edit') ? $edit_mode : $view_mode;
     if ($load_op == REVISIONING_LOAD_LATEST) {
       // Site is configured to load latest revision, but we'll only do this if
-      // the latest isn't loaded already and the user has the permission to do so.
+      // the latest isn't loaded already and user has the permission to do so.
       $latest_vid = revisioning_get_latest_revision_id($node->nid);
       if ($latest_vid != $node->current_revision_id) {
         if (!$check_access) {
@@ -1019,7 +1026,7 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
         $node->is_current = revisioning_revision_is_current($node);
         $revision_op = ($op == 'view') ? 'view revisions' : 'edit revisions';
         $access = _revisioning_access_node_revision($revision_op, $node);
-        // Restore $node (even though called by value), so that it remains consistent.
+        // Restore $node (even though called by value), to remain consistent.
         $node->vid = $original_vid;
         $node->is_current = revisioning_revision_is_current($node);
         if ($access) {
@@ -1041,18 +1048,7 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
  *   render array as returned by drupal_get_form()
  */
 function revisioning_node_overview($node) {
-  return _theme_revisions_summary($node);
-/* Code below works but results in three different looks, prefer consistency
-  if ($node->revision_moderation) {
-    return _theme_revisions_summary($node);
-  }
-  if (module_exists("diff")) {
-    module_load_include('inc', 'diff', 'diff.pages');
-    return diff_diffs_overview($node);
-  }
-  module_load_include('inc', 'node', 'node.pages');
-  return node_revision_overview($node);
- */
+  return _revisioning_theme_revisions_summary($node);
 }
 
 /**

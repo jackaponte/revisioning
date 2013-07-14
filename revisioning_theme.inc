@@ -318,7 +318,7 @@ function theme_table_revisions($header, $rows) {
  *
  * @ingroup themeable
  */
-function _theme_revisions_summary($node) {
+function _revisioning_theme_revisions_summary($node) {
   drupal_set_title(t('Revisions for %title', array('%title' => $node->title)), PASS_THROUGH);
   return drupal_get_form('revisioning_revisions_summary', $node->nid);
 }

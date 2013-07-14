@@ -30,8 +30,6 @@ class revisioning_handler_filter_node_number_of_revisions extends views_handler_
         $where_expression = "$pseudo_field $operator_symbol " . $this->value['value'];
       }
       $this->query->add_where_expression($this->options['group'], $where_expression);
-
-    // $this->{$info[$this->operator]['method']}($where_expression); // can't use sanitizes.
     }
   }
 }

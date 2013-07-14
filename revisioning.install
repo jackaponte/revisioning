@@ -38,7 +38,7 @@ function revisioning_uninstall() {
     // Maybe revisioning_auto_publish_<type> and new_revisions_<type>
     // should be used in array, like 'revision_moderation' below?
     variable_del('new_revisions_' . $type->type);
-    // Remove 'revision_moderation' from all node_options_<content_type> variables.
+    // Remove 'revision_moderation' from all node_options_<type> variables.
     $variable_name = 'node_options_' . $type->type;
     if ($node_options = variable_get($variable_name, NULL)) {
       $node_options = array_diff($node_options, array('revision_moderation'));
@@ -51,8 +51,8 @@ function revisioning_uninstall() {
     require_once 'revisioning.taxonomy.inc';
 
     foreach (node_load_multiple(FALSE) as $node) {
-      // Modify node objects to be consistent with Revisioning being uninstalled,
-      // before updating the {taxonomy_index} table accordingly.
+      // Modify node objects to be consistent with Revisioning being
+      // uninstalled, before updating the {taxonomy_index} table accordingly.
       unset($node->revision_moderation);
       revisioning_update_taxonomy_index($node, FALSE);
     }

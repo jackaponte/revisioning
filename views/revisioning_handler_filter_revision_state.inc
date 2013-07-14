@@ -1,8 +1,10 @@
 <?php
 
 /**
- * @file
- * Views filter override to filter on revision state, i.e. pending, archived, current.
+ * @file revisioning_handler_filter_revision_state.inc
+ * 
+ * Views filter override to filter on revision state, i.e. pending, archived or
+ * current.
  */
 
 class revisioning_handler_filter_revision_state extends views_handler_filter_in_operator {

@@ -11,24 +11,6 @@
 /************************** Rules Events **************************************/
 
 /**
- * Implements hook_rules_data_info()
- *
-function revisioning_rules_data_info() {
-  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'entity') . '/modules/node.info.inc';
-  $rules_data = array(
-    'revisioning_revision' => array(
-      'label' => t('Content revision'),
-      'group' => t('Revisioning'),
-      'parent' => 'node',
-      'ui class' => 'RulesDataUIEntity',
-      'wrap' => TRUE,
-    )
-  );
-  return $rules_data;
-}
-*/
-
-/**
  * Implements hook_rules_event_info().
  *
  * On behalf of the Revisioning module.
@@ -84,24 +66,6 @@ function _revisioning_rules_event_variables() {
       'description' => t('The current content revision'),
       'handler' => 'revisioning_events_argument_current_revision',
     ),
-  //    'author' => array(
-  //      'type' => 'user',
-  //      'label' => t('content author'),
-  //      'description' => 'The creator of the initial version of the content',
-  //      'handler' => 'revisioning_events_argument_node_author'
-  //    ),
-  //    'target_author' => array(
-  //      'type' => 'user',
-  //      'label' => t('target revision author'),
-  //      'description' => t('The author of the target revision.'),
-  //      'handler' => 'revisioning_events_argument_target_revision_author'
-  //    ),
-  //    'current_author' => array(
-  //      'type' => 'user',
-  //      'label' => t('current revision author'),
-  //      'description' => t('The author of the current revision.'),
-  //      'handler' => 'revisioning_events_argument_current_revision_author'
-  //    ),
   );
   return $vars;
 }
@@ -297,27 +261,14 @@ function revisioning_rules_action_publish_latest($node) {
   _revisioning_publish_latest_revision($node);
 }
 
-
 /**
  * Implements hook_entity_property_info_alter().
  */
 function revisioning_entity_property_info_alter(&$info) {
-  // $info['node']['properties']['author']['getter callback'] = 'revisioning_user_get_properties';
+  // $info['node']['properties']['author']['getter callback'] =
+  // 'revisioning_user_get_properties';
 }
 
-/**
- * Callback for getting node properties.
- *
- * @see entity_metadata_node_entity_info_alter()
- *
-function revisioning_user_get_properties($node, array $options, $name, $entity_type) {
-  global $user;
-  switch ($name) {
-    case 'editor':
-      return $user;
-  }
-}
-*/
 /**
  * @}
  */

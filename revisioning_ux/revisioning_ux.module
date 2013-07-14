@@ -112,8 +112,7 @@ function revisioning_ux_menu_alter(&$items) {
 /**
  * Implements hook_theme().
  *
- * Load revisions-summary-reset.tpl.php instead of
- * revsions-summary.tpl.php.
+ * Load revisions-summary-reset.tpl.php instead of revsions-summary.tpl.php.
  */
 function revisioning_ux_theme() {
   $theme = array();
