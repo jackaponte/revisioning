@@ -160,7 +160,7 @@ function revisioning_action_info() {
       // 'behavior' => array('changes_property'),
       // Unlike 'node_publish_action', this is NOT a 'node_presave' action:
       'triggers' => array('any'),
-    )
+    ),
   );
   return $action_info;
 }

@@ -55,7 +55,8 @@ function revisioning_update_taxonomy_index($node, $show_unpublished_content_term
 }
 
 /**
- * Return an array of all the taxonomy term ids belonging to the supplied node revision.
+ * Return an array of all the taxonomy term ids belonging to the supplied node
+ * revision.
  *
  * @param int $vid
  *   the vocabulary id

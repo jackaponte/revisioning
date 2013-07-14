@@ -621,7 +621,7 @@ function _revisioning_publish_latest_revision(&$node) {
  *   The id of the node.
  *
  * @return int
- *  count of the number of revisions newer than the supplied vid
+ *   count of the number of revisions newer than the supplied vid
  */
 function _revisioning_get_number_of_revisions_newer_than($vid, $nid) {
   $result = db_query("SELECT COUNT(vid) FROM {node_revision} WHERE nid = :nid AND vid > :vid",
@@ -725,7 +725,7 @@ function _revisioning_node_info_msg($node) {
  * @param array $permissions
  *   An array of permissions (strings)
  * @param object $account
- *   (optional) The user account object. Defaults to the current user if omitted.
+ *   (optional) The user account object. Defaults to current user if omitted.
  *
  * @return bool
  *   Whether the user has access to all permissions

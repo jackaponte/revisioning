@@ -287,7 +287,7 @@ function theme_revisioning_revisions_summary($variables) {
   return $output . drupal_render_children($form);
 }
 
-/**
+/*
  * Implement (in your own module) the function below if you want to override
  * the way in which the Revisions table is constructed.
  * If you do, don't forget to register this theme_hook() via <module>_theme()
@@ -300,8 +300,8 @@ function theme_revisioning_revisions_summary($variables) {
  *
  * @ingroup themeable
  *
-function theme_table_revisions($header, $rows) {
-}
+ function theme_table_revisions($header, $rows) {
+ }
 */
 
 /**
