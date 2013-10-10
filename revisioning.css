@@ -1,7 +1,3 @@
-
-.submenu.revisions {
-}
-
 .table-revisions th.form-submit,
 .table-revisions td .form-type-checkbox {
   text-align: center;
@@ -17,9 +13,6 @@
 
 .revision-current.published td {
   background-color: #ffc; /* pale yellow, same as node/node.css */
-}
-
-div.block-revisioning h2 {
 }
 
 div.block-revisioning ul {
