@@ -166,7 +166,7 @@ function revisioning_revision_states_all() {
  */
 function revisioning_node_has_pending($node, $settings) {
   revisioning_set_node_revision_info($node);
-  return ($node->revision_moderation && $node->num_revisions == 1 && !$node->status) || ($num_pending = _revisioning_get_number_of_pending_revisions($node->nid)) > 0;
+  return ($node->revision_moderation && $node->num_revisions == 1 && !$node->status) || (_revisioning_get_number_of_pending_revisions($node->nid) > 0);
 }
 
 /**

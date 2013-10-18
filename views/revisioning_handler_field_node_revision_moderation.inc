@@ -4,6 +4,7 @@
  * @file
  * Handler for the 'Node: revision moderation' field.
  */
+
 class revisioning_handler_field_node_revision_moderation extends views_handler_field {
 
   /**
@@ -32,7 +33,7 @@ class revisioning_handler_field_node_revision_moderation extends views_handler_f
   }
 
   /**
-   * Render the data
+   * Render the data.
    */
   public function render($values) {
     $content_type = $values->{$this->aliases['type']};

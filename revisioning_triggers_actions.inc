@@ -132,7 +132,7 @@ function revisioning_action_revision_trigger($revision, $hook) {
         default:
       }
     }
-    $result = actions_do($aid, $objects[$type], $context);
+    actions_do($aid, $objects[$type], $context);
   }
 }
 
