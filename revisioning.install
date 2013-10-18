@@ -9,6 +9,11 @@
  * Implements hook_install().
  */
 function revisioning_install() {
+  /*
+   * taxonomy_node_insert() and taxonomy_node_update() hooks must be executed
+   * before revisioning_node_insert() and revisioning_node_update(). So increase
+   * our weight.
+   */
   db_update('system')
     ->fields(array('weight' => 1))
     ->condition('name', 'revisioning')

@@ -471,18 +471,6 @@ function revisioning_node_view($node, $view_mode, $langcode) {
 }
 
 /**
- * Implements hook_preprocess_node().
- *
- * Last of the dont_display hooks.
- */
-function revisioning_preprocess_node(&$variables) {
-  if (!empty($variables['dont_display'])) {
-    // $variables = array();
-    return;
-  }
-}
-
-/**
  * Output a status message, provided teh user has the required permission.
  *
  * @param string $message

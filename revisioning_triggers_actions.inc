@@ -217,6 +217,6 @@ function revisioning_publish_latest_revision_action(&$entity, $context = array()
     revisioning_set_status_message(t('Revision has been published.'));
   }
   else {
-    drupal_set_message(t('"%title" has no pending revision to be published.', array('%title' => check_plain($node->title))), 'warning');
+    drupal_set_message(t('"%title" has no pending revision to be published.', array('%title' => $node->title)), 'warning');
   }
 }

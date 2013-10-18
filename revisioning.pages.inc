@@ -61,7 +61,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
 
       // Add javascript to show/hide the "Published" checkbox if the user
       // presses one of the first two radio buttons. Also updates summary tabs.
-      $js_file = drupal_get_path('module', 'revisioning') . '/revision-radios.js';
+      $js_file = drupal_get_path('module', 'revisioning') . '/revisioning-radios.js';
       // After node.js.
       drupal_add_js($js_file, array('weight' => 1));
     }
@@ -260,7 +260,6 @@ function revisioning_revert_confirm_pre_submit($form, &$form_state) {
   $return = module_invoke_all('revisionapi', 'pre revert', $node);
   if (in_array(FALSE, $return)) {
     drupal_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
-    die;
   }
 }
 

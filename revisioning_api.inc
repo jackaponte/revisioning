@@ -340,7 +340,6 @@ function _revisioning_revertpublish_revision(&$node, $vid = NULL) {
   $return = module_invoke_all('revisionapi', 'pre revert', $node_revision);
   if (in_array(FALSE, $return)) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
-    die;
   }
   _revisioning_revert_revision($node_revision);
   module_invoke_all('revisionapi', 'post revert', $node_revision);
@@ -489,7 +488,6 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
   $return = module_invoke_all('revisionapi', 'pre publish', $node_revision);
   if (in_array(FALSE, $return)) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
-    die;
   }
   // Update {node} and {node_revision} tables, setting the "published" (ie.
   // status) flag.
