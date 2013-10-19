@@ -60,7 +60,10 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
   else {
     return $replacements;
   }
-
+  
+  if (!isset($node->nid)) {
+    return $replacements;
+  }
   // This may not be necessary in all cases, but node data is cached anyway.
   $revision = node_load($node->nid, $node->vid);
 

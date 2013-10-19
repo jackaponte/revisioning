@@ -19,13 +19,6 @@ function revisioning_views_data_alter(&$data) {
       'handler' => 'revisioning_handler_field_node_last_editor',
       'click sortable' => TRUE,
     ),
-  /*  See WhoWhatWhen for sort ideas
-    'filter' => array(
-      'handler' => 'revisioning_handler_filter_node_last_editor',
-    ),
-    'sort' => array(
-      'handler' => 'revisioning_handler_sort_node_last_editor',
-    ),*/
   );
 
   $data['node']['state'] = array(
