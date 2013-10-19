@@ -61,7 +61,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
 
       // Add javascript to show/hide the "Published" checkbox if the user
       // presses one of the first two radio buttons. Also updates summary tabs.
-      $js_file = drupal_get_path('module', 'revisioning') . '/revisioning-radios.js';
+      $js_file = drupal_get_path('module', 'revisioning') . '/js/revisioning-radios.js';
       // After node.js.
       drupal_add_js($js_file, array('weight' => 1));
     }
@@ -435,8 +435,8 @@ function _revisioning_block_pending_revisions_content($revisions) {
     // If they exist, should we show multiple pending revisions on same node?
     $links[] = l($revision->title, "node/$revision->nid/revisions/$revision->vid/view");
   }
-  // Also loads /revisioning-rtl.css
-  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css');
+  // Also loads /css/revisioning-rtl.css
+  drupal_add_css(drupal_get_path('module', 'revisioning') . '/css/revisioning.css');
   $title_link = trim(variable_get('revisioning_content_summary_page', ''));
   $link_options = array();
   if (empty($title_link)) {

@@ -48,8 +48,8 @@ class revisioning_handler_field_revision_state extends views_handler_field {
 
     if (empty($this->_node_based)) {
       $join = new views_join();
-      $join->construct('node', $this->table_alias, 'nid', 'nid');       $table_alias = $this->query->ensure_table('node', $this->table_alias, $join);
-
+      $join->construct('node', $this->table_alias, 'nid', 'nid');
+      $table_alias = $this->query->ensure_table('node', $this->table_alias, $join);
       $this->aliases['published'] = $this->query->add_field($table_alias, 'status');
       $this->aliases['current_vid'] = $this->query->add_field($table_alias, 'vid');
     }

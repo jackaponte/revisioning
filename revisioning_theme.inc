@@ -206,7 +206,7 @@ function theme_revisioning_revisions_summary($variables) {
   // Need node info, fortunately node_load() employs a cache so is efficient.
   $node = node_load($form['nid']['#value']);
 
-  drupal_add_css(drupal_get_path('module', 'revisioning') . '/revisioning.css');
+  drupal_add_css(drupal_get_path('module', 'revisioning') . '/css/revisioning.css');
 
   // Set up the table rows.
   $rows = array();
