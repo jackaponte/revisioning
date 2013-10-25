@@ -24,15 +24,15 @@ define('REVISIONING_NEW_REVISION_EVERY_SAVE', 1);
 define('REVISIONING_REVISIONS_BLOCK_OLDEST_AT_TOP', 0);
 define('REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP', 1);
 
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_api.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.pages.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_theme.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_tokens.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning_triggers_actions.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.taxonomy.inc';
+module_load_include('inc', 'revisioning', 'revisioning_api');
+module_load_include('inc', 'revisioning', 'revisioning.pages');
+module_load_include('inc', 'revisioning', 'revisioning_theme');
+module_load_include('inc', 'revisioning', 'revisioning_tokens');
+module_load_include('inc', 'revisioning', 'revisioning_triggers_actions');
+module_load_include('inc', 'revisioning', 'revisioning.taxonomy');
 if (module_exists('rules')) {
   // This is not supposed to be necessary, but without it bad things happen.
-  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'revisioning') . '/revisioning.rules.inc';
+  module_load_include('inc', 'revisioning', 'revisioning.rules');
 }
 
 
