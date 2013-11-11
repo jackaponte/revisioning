@@ -582,7 +582,9 @@ function revisioning_node_presave($node) {
     // Copy from {node_revision} the field values replicated on {node} before
     // handing back to node_save(). This is a side-effect of core D7's somewhat
     // "sick" table denormalisation.
-    $node->current_status  = $current_revision->status;
+    // If the Scheduler module is used take the status from there. See
+    // revisioning_scheduler_api().
+    $node->current_status  = isset($node->scheduled_status) ? $node->scheduled_status : $current_revision->status;
     $node->current_title   = $current_revision->title;
     $node->current_promote = $current_revision->promote;
     $node->current_sticky  = $current_revision->sticky;
@@ -780,6 +782,18 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
         array('%revision_op' => $revision_op)), 'warning', FALSE);
   }
   return 'view';
+}
+
+/**
+ * Implements hook_scheduler_api().
+ */
+function revisioning_scheduler_api($node, $action) {
+  if ($action == 'pre_publish') {
+    $node->scheduled_status = NODE_PUBLISHED;
+  }
+  elseif ($action == 'pre_unpublish') {
+    $node->scheduled_status = NODE_NOT_PUBLISHED;
+  }
 }
 
 /**
