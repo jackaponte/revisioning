@@ -282,7 +282,7 @@ function revisioning_views_default_views() {
       'empty_column' => 0,
     ),
     'state' => array(
-      'sortable' => 1,
+      'sortable' => 0,
       'default_sort_order' => 'desc',
       'align' => '',
       'separator' => '',

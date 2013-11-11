@@ -489,14 +489,16 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
   if (in_array(FALSE, $return)) {
     drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
   }
-  // Update {node} and {node_revision} tables, setting the "published" (ie.
-  // status) flag.
+  // Update {node} and {node_revision} tables setting status and other flags.
   db_update('node')
     ->fields(array(
       'vid' => $node_revision->vid,
       'title' => $node_revision->title,
       'changed' => time(),
-      'status' => NODE_PUBLISHED))
+      'status' => NODE_PUBLISHED,
+      'comment' => $node_revision->comment,
+      'promote' => $node_revision->promote,
+      'sticky' => $node_revision->sticky))
     ->condition('nid', $node_revision->nid)
     ->execute();
 
