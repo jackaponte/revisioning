@@ -555,10 +555,7 @@ function revisioning_node_presave($node) {
     $node->current_title   = $node->title;
     $node->current_promote = $node->promote;
     $node->current_sticky  = $node->sticky;
-    if (isset($node->comment)) {
-      // Comment module enabled.
-      $node->current_comment = $node->comment;
-    }
+    $node->current_comment = isset($node->comment) ? $node->comment : 0;
     return;
   }
 
@@ -588,10 +585,7 @@ function revisioning_node_presave($node) {
     $node->current_title   = $current_revision->title;
     $node->current_promote = $current_revision->promote;
     $node->current_sticky  = $current_revision->sticky;
-    if (isset($current_revision->comment)) {
-      // Comment module enabled.
-      $node->current_comment = $current_revision->comment;
-    }
+    $node->current_comment = isset($current_revision->comment) ? $current_revision->comment : 0;
   }
 }
 
