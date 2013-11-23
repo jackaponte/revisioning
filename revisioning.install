@@ -83,7 +83,7 @@ function revisioning_update_7104() {
  * To avoid problems when Revisioning is installed with Diff and Workbench too.
  * See [#2142429].
  */
-function hook_update_7107() {
+function revisioning_update_7107() {
   db_update('system')
     ->fields(array('weight' => '6'))
     ->condition('name', 'revisioning')
