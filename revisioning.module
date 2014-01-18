@@ -692,10 +692,11 @@ function revisioning_node_insert($node) {
   }
   if (!empty($file_fields)) {
     foreach ($file_fields as $file_field) {
-      $files = field_get_items('node', $node, $file_field['field_name'], $node->language);
-      foreach ($files as $single_file) {
-        $file = (object) $single_file;
-        file_usage_add($file, 'revisioning', 'revision', $node->vid);
+      if ($files = field_get_items('node', $node, $file_field['field_name'], $node->language)) {
+        foreach ($files as $single_file) {
+          $file = (object) $single_file;
+          file_usage_add($file, 'revisioning', 'revision', $node->vid);
+        }
       }
     }
   }
