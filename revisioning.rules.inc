@@ -59,6 +59,10 @@ function _revisioning_rules_event_variables() {
       'description' => t('The acting user.'),
       'handler' => 'revisioning_events_argument_global_user',
     ),
+    'node' => array(
+      'type' => 'node',
+      'label' => t('target node.'),
+    ),
     'revision' => array(
       // Type revisioning_revision' ?
       'type' => 'node',
