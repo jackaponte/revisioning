@@ -703,6 +703,39 @@ function revisioning_node_insert($node) {
 }
 
 /**
+ * Implements hook_node_access_records().
+ *
+ * Replaces all node properties and fields to those of the current node,
+ * so node access modules implementing this hook do not use values
+ * from revisions that are still in moderation.
+ */
+function revisioning_node_access_records($node) {
+  if (!revisioning_revision_is_current($node)) {
+    $current_node = node_load($node->nid, NULL, TRUE);
+    foreach (get_object_vars($node) as $k => $value) {
+      unset($node->$k);
+      if (isset($current_node->$k)) {
+        $node->$k = $current_node->$k;
+      }
+    }
+  }
+  return array();
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Ensures that revisioning_node_access_records() runs before other modules.
+ */
+function revisioning_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'node_access_records') {
+    $group = array('revisioning' => $implementations['revisioning']);
+    unset($implementations['revisioning']);
+    $implementations = $group + $implementations;
+  }
+}
+
+/**
  * Implements hook_views_api().
  */
 function revisioning_views_api() {
