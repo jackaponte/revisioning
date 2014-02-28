@@ -47,15 +47,15 @@ function revisioning_admin_configure() {
   );
   $form['revisioning_publication_config']['revisioning_publication_shortcuts'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Show publication shortcut controls for all users who can publish node.'),
+    '#title' => t('Show publication shortcut controls for all users permitted to publish nodes.'),
     '#default_value' => variable_get('revisioning_publication_shortcuts', FALSE),
-    '#description' => t('Radio button controls are added immediately under the "Revisioning" pane in the node edit form for any user who can publish the node; if this option is not selected, then only users with "administer nodes" will see these controls.'),
+    '#description' => t('Radio buttons are added immediately under the "Revisioning" pane in the content edit form for any user permitted to publish. If not selected, then only users with "administer nodes" will see these controls.'),
   );
   $form['revisioning_publication_config']['revisioning_no_moderation_by_default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Publish content by default.'),
     '#default_value' => variable_get('revisioning_no_moderation_by_default', FALSE),
-    '#description' => t('When publication shortcut controls are shown, make the default behavior be to publish the content, if the user has permissions to publish it immediately.  Otherwise, the default will be to moderate.'),
+    '#description' => t('When publication shortcut controls are shown, publish content by default. If not, the default will be to moderate.'),
   );
 
   if (module_exists('taxonomy')) {

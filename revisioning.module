@@ -1169,7 +1169,7 @@ if (module_exists('diff')) {
     // For diff_diffs_show().
     module_load_include('inc', 'diff', 'diff.pages');
     // Make sure that latest of the two revisions is on the right.
-    if ($node->current_revision_id > $node->vid) {
+    if ($node->current_revision_id < $node->vid) {
       return diff_diffs_show($node, $node->current_revision_id, $node->vid);
     }
     return diff_diffs_show($node, $node->vid, $node->current_revision_id);

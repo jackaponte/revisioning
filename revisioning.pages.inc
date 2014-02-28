@@ -30,10 +30,10 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       // See revisioning_node_presave().
     }
 
-    // Only add this radio selector if user has the appropriate
-    // permissions.  'administer nodes' is required by default, but
-    // if configured appropriately, then any user who can publish
-    // this node will get the shortcut controls.
+    // Only add this radio selector if user has the appropriate permissions.
+    // 'administer nodes' is required by default, but if configured
+    // appropriately, then any user premitted to publish this node will get the
+    // shortcut controls.
     $add_radio_selector = variable_get('revisioning_publication_shortcuts', FALSE) ?
       revisioning_user_node_access('publish revisions', $node) :
       user_access('administer nodes');
@@ -75,7 +75,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       }
     }
     else {
-      // For non-admin don't show radiobox, just set default, hidden on form.
+      // For non-admin don't show radios, just set default, hidden on form.
       // Note that $form['revision_information']['revision'] is already set.
       $form['revision_moderation'] = array(
         '#type' => 'value',
