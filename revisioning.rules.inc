@@ -49,7 +49,7 @@ function revisioning_rules_event_info() {
 /**
  * Implements hook_rules_event_info_alter().
  *
- * Add revision variable to all events with node.
+ * Add revision variable to all events with node. [#2232451]
  */
 function revisioning_rules_event_info_alter(&$events) {
   foreach ($events as $key => $event) {
