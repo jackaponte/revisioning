@@ -342,6 +342,11 @@ function _revisioning_set_info_message() {
  * that's not the one we've saved.
  */
 function _revisioning_form_submit($form, &$form_state) {
+  // The node may have been altered in revisioning_node_access_records().
+  // Make sure we're using the revision that was just submitted.
+  if ($node = drupal_static('revisioning_saved_node')) {
+   $form_state['node'] = $node;
+  }
   // Don't redirect when creating new node, when not moderated or user doesn't
   // have access to the revision.
   if (isset($form_state['node']->nid) && !empty($form_state['node']->revision_moderation) && _revisioning_access_node_revision('view revisions', $form_state['node'])) {
