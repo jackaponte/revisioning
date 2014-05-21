@@ -288,7 +288,10 @@ function revisioning_revert_confirm_pre_submit($form, &$form_state) {
  * node_save().
  */
 function revisioning_revert_confirm_post_submit($form, &$form_state) {
-  $node = $form['#node_revision'];
+  $node = drupal_static('revisioning_saved_node');
+  if (!isset($node)) {
+    $node = $form['#node_revision'];
+  }
   // _revisioning_publish_node($node->nid); [#611988]
   module_invoke_all('revisionapi', 'post revert', $node);
 }
