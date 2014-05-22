@@ -288,10 +288,7 @@ function revisioning_revert_confirm_pre_submit($form, &$form_state) {
  * node_save().
  */
 function revisioning_revert_confirm_post_submit($form, &$form_state) {
-  $node = drupal_static('revisioning_saved_node');
-  if (!isset($node)) {
-    $node = $form['#node_revision'];
-  }
+  $node = $form['#node_revision'];
   // _revisioning_publish_node($node->nid); [#611988]
   module_invoke_all('revisionapi', 'post revert', $node);
 }
@@ -345,11 +342,6 @@ function _revisioning_set_info_message() {
  * that's not the one we've saved.
  */
 function _revisioning_form_submit($form, &$form_state) {
-  // The node may have been altered in revisioning_node_access_records().
-  // Make sure we're using the revision that was just submitted.
-  if ($node = drupal_static('revisioning_saved_node')) {
-   $form_state['node'] = $node;
-  }
   // Don't redirect when creating new node, when not moderated or user doesn't
   // have access to the revision.
   if (isset($form_state['node']->nid) && !empty($form_state['node']->revision_moderation) && _revisioning_access_node_revision('view revisions', $form_state['node'])) {

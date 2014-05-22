@@ -703,39 +703,30 @@ function revisioning_node_insert($node) {
 }
 
 /**
- * Implements hook_node_access_records().
+ * Implements hook_node_access_records_alter().
  *
- * Replaces all node properties and fields to those of the current node,
- * so node access modules implementing this hook do not use values
- * from revisions that are still in moderation.
+ * If the node is not the current node this function clears the grants array and
+ * rebuilds it using the current node.
  */
-function revisioning_node_access_records($node) {
+function revisioning_node_access_records_alter(&$grants, $node) {
 
   if (!revisioning_revision_is_current($node)) {
-    // For the sake of _revisioning_form_submit().
-    drupal_static('revisioning_saved_node', clone $node);
-
     $current_node = node_load($node->nid, NULL, TRUE);
-    foreach (get_object_vars($node) as $k => $value) {
-      unset($node->$k);
-      if (isset($current_node->$k)) {
-        $node->$k = $current_node->$k;
+    $grants = array();
+    foreach (module_implements('node_access_records') as $module) {
+      $function = $module . '_node_access_records';
+      if (function_exists($function)) {
+        $result = call_user_func_array($function, array($current_node));
+        if (isset($result)) {
+          if (is_array($result)) {
+            $grants = array_merge_recursive($grants, $result);
+          }
+          else {
+            $grants[] = $result;
+          }
+        }
       }
     }
-  }
-  return array();
-}
-
-/**
- * Implements hook_module_implements_alter().
- *
- * Ensures that revisioning_node_access_records() runs before other modules.
- */
-function revisioning_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'node_access_records') {
-    $group = array('revisioning' => $implementations['revisioning']);
-    unset($implementations['revisioning']);
-    $implementations = $group + $implementations;
   }
 }
 
