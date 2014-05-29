@@ -644,7 +644,9 @@ function revisioning_node_update($node) {
     }
   }
   // Create file revision entries for files created using older versions.
-  $old_node = isset($node->original) ? $node->original : NULL;
+  // $old_node = isset($node->original) ? $node->original : NULL;
+  // [#2276657]
+  $old_node = isset($node->original) && !empty($node->original) ? $node->original : NULL;
   if (isset($old_node) && !empty($file_fields)) {
     foreach ($file_fields as $file_field) {
       if ($old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->language)) {
