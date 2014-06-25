@@ -57,6 +57,9 @@ function revisioning_tokens($type, $tokens, array $data = array(), array $option
     // When Token module is enabled.
     $node = $data['entity'];
   }
+  elseif (!empty($data['node'])) {
+    $node = $data['node'];
+  }
   else {
     return $replacements;
   }
