@@ -705,6 +705,16 @@ function revisioning_node_insert($node) {
 }
 
 /**
+ * Implements hook_node_delete().
+ */
+function revisioning_node_delete($node) {
+  if ($revisions = node_revision_list($node)) {
+    $vids = array_keys($revisions);
+    db_delete('file_usage')->condition('module', 'revisioning')->condition('id', $vids, 'IN')->execute();
+  }
+}
+
+/**
  * Implements hook_node_access_records_alter().
  *
  * If the node is not the current node this function clears the grants array and
