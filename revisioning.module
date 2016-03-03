@@ -1122,18 +1122,18 @@ function _revisioning_edit($node) {
  */
 function _revisioning_view_revision($node) {
   if (isset($node->nid)) {
-    /* For Panels: @todo test this thoroughly. See [#1567880]
+    // For Panels, see [#1567880]
     $router_item = menu_get_item('node/' . $node->nid);
-    if (!empty($router_item['file'])) {
-      $path = $_SERVER['DOCUMENT_ROOT'] . base_path();
-      require_once $path . $router_item['file'];
+    if (!empty($router_item['include_file'])) {
+      $path = DRUPAL_ROOT . '/'; // $_SERVER['DOCUMENT_ROOT'] . base_path();
+      require_once $path . $router_item['include_file'];
     }
     // Call whatever function is assigned to the main node path but pass the
     // current node as an argument. This approach allows for the reuse of Panel
     // definition acting on node/%node.
     if (isset($router_item['page_callback'])) {
       return $router_item['page_callback']($node);
-    }*/
+    }
   }
   // This is the callback used by node.module for node/%node/revisions/%/view
   return node_show($node, TRUE);
