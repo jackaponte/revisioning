@@ -357,6 +357,23 @@ function vid_to_arg($arg, &$map, $index) {
 }
 
 /**
+ * Implements hook_admin_paths().
+ */
+function revisioning_admin_paths() {
+  return array(
+    'node/*/unpublish-current' => TRUE,
+    'node/*/revisions/list' => TRUE,
+    'node/*/revisions/delete-archived' => TRUE,
+    'node/*/revisions/*/edit' => TRUE,
+    'node/*/revisions/*/publish' => TRUE,
+    'node/*/revisions/*/unpublish' => TRUE,
+    'node/*/revisions/*/revert' => TRUE,
+    'node/*/revisions/*/delete' => TRUE,
+    'node/*/revisions/*/compare' => TRUE,
+  );
+}
+
+/**
  * Implements hook_node_load().
  *
  * The same load op may occur multiple times during the same HTTP request, so
