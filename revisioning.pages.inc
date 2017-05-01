@@ -115,17 +115,22 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
  * and auto-publish policies.
  */
 function revisioning_form_node_type_form_alter(&$form, &$form_state) {
-  $form['workflow']['#collapsed'] = FALSE;
-  $form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (requires "Create new revision")');
+  $form['revision']['#collapsed'] = FALSE;
+  //$form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (requires "Create new revision")');
+  $form['revision']['revision']['revision_moderation'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('New revision in draft, pending moderation (requires "Create new revision by default")'),
+    '#parents' => array('revision_moderation'),
+  );
 
-  $form['workflow']['revisioning'] = array(
+  $form['revision']['revisioning'] = array(
     '#type' => 'fieldset',
     '#title' => t('New revision in draft'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
   $content_type = $form['#node_type']->type;
-  $form['workflow']['revisioning']['new_revisions'] = array(
+  $form['revision']['revisioning']['new_revisions'] = array(
     '#title' => t('Create new revision:'),
     '#type' => 'radios',
     '#options' => array(
@@ -134,7 +139,7 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
     '#default_value' => (int) variable_get('new_revisions_' . $content_type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING),
     '#description' => t('Use less disk space and avoid cluttering your revisions list. With the first option ticked, modifications are saved to the same copy (i.e. no additional revisions are created) until the content is published.'),
   );
-  $form['workflow']['revisioning']['revisioning_auto_publish'] = array(
+  $form['revision']['revisioning']['revisioning_auto_publish'] = array(
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
     '#default_value' => (int) variable_get('revisioning_auto_publish_' . $content_type, FALSE),
