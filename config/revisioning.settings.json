@@ -1,0 +1,8 @@
+{
+    "_config_name": "revisioning.settings",
+    "revisioning_view_callback": "0",
+    "revisioning_edit_callback": "0",
+    "revisioning_require_update_to_publish": 1,
+    "revisioning_show_taxonomy_terms": 1,
+    "revisioning_in_views_show_unpublished_content_terms": 1
+}
