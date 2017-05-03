@@ -1,6 +1,6 @@
 
-DESCRIPTION
-===========
+DESCRIPTION OF ORIGINAL DRUPAL MODULE
+=====================================
 This module channels unpublished content as well as edits to current content
 into a queue for review by a moderator/publisher prior to becoming "live", i.e.
 visible to the public.
@@ -30,10 +30,15 @@ without any difficulty.
 
 INSTALLATION & CONFIGURATION
 ============================
-Step-by-step instructions can be found in the tutorials listed on the
-Revisioning project page, http://drupal.org/project/revisioning.
+Step-by-step instructions for the Drupal module can be found in the tutorials listed on the
+Revisioning Drupal project page, http://drupal.org/project/revisioning.
 
 AUTHORS
 =======
 Main module: Rik de Boer, Melbourne, Australia.
 Revisioning UX: Greg Anderson, USA
+
+MAINTAINERS
+===========
+
+Ported to Backdrop CMS and maintained by Jack Aponte (https://github.com/jackaponte).
