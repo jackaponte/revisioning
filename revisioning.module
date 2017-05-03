@@ -89,7 +89,7 @@ function revisioning_permission() {
     : t('Applies to content types that are subject to moderation, i.e.: %moderated_content_types.',
         array('%moderated_content_types' => $moderated_content_types));
 
-  if (!empty($moderated_content_types) && variable_get('revisioning_require_update_to_publish', TRUE)) {
+  if (!empty($moderated_content_types) && config_get('revisioning.settings', 'revisioning_require_update_to_publish', TRUE)) {
     $publish_description .= ' <br/>' . $edit_description;
   }
 
@@ -386,7 +386,7 @@ function revisioning_admin_paths() {
  * hook_node_load is also called on the /content summary page:
  * node_admin_nodes() -> node_load_multiple() ->
  * DrupalDefaultEntityController->attachLoad()
- * 
+ *
  * We do nothing in this 2nd case.
  */
 function revisioning_node_load($nodes, $types) {
@@ -399,7 +399,7 @@ function revisioning_node_load($nodes, $types) {
   // See also revisioning_update_taxonomy_index().
   //
   $double_check_access = (strpos($_GET['q'], 'taxonomy/term') === 0) &&
-    variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE);
+    config_get('revisioning.settings', 'revisioning_in_views_show_unpublished_content_terms', TRUE);
 
   // At this point status, comment, promote and sticky have been set on all of
   // the $nodes according to the {node_revision} table (not the {node} table),
@@ -580,7 +580,7 @@ function revisioning_node_presave($node) {
     // May want to do this for auto_publish too, to provide $node->current... to
     // other modules, as a courtesy.
     if (!isset($node->revision_condition) && !empty($node->revision) && !empty($node->is_pending)
-      && variable_get('new_revisions_' . $node->type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) == REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) {
+      && config_get('revisioning.settings', 'new_revisions_' . $node->type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) == REVISIONING_NEW_REVISION_WHEN_NOT_PENDING) {
       revisioning_set_status_message(t('Updating existing draft, not creating new revision as this one is still pending.'));
       // To tell revisioning_node_update().
       $node->revision_condition = REVISIONING_NEW_REVISION_WHEN_NOT_PENDING;
@@ -615,7 +615,7 @@ function revisioning_node_presave($node) {
  */
 function revisioning_node_update($node) {
 
-  revisioning_update_taxonomy_index($node, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
+  revisioning_update_taxonomy_index($node, config_get('revisioning.settings', 'revisioning_in_views_show_unpublished_content_terms', TRUE));
 
   // Check whether the node has a current_status property and update the
   // node->status to allow node_save()'s call to node_access_acquire_grants()
@@ -695,7 +695,7 @@ function revisioning_node_update($node) {
  */
 function revisioning_node_insert($node) {
 
-  revisioning_update_taxonomy_index($node, variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE));
+  revisioning_update_taxonomy_index($node, config_get('revisioning.settings', 'revisioning_in_views_show_unpublished_content_terms', TRUE));
 
   if (!empty($node->revision_moderation)) {
     revisioning_set_status_message($node->status ? t('Initial revision created and published.') : t('Initial draft created, pending publication.'));
@@ -773,6 +773,7 @@ function revisioning_views_api() {
  * Implements hook_user_node_access().
  */
 function revisioning_user_node_access($revision_op, $node, $account = NULL) {
+  $config = config('revisioning.settings');
   if (!isset($account)) {
     $account = $GLOBALS['user'];
   }
@@ -805,7 +806,7 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
       return user_access($revision_op, $account) ? 'update' : FALSE;
 
     case 'publish revisions':
-      $node_op = variable_get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
+      $node_op = $config->get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
       if (user_access('publish revisions', $account)) {
         return $node_op;
       }
@@ -818,7 +819,7 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
       return FALSE;
 
     case 'unpublish current revision':
-      $node_op = variable_get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
+      $node_op = $config->get('revisioning_require_update_to_publish', TRUE) ? 'update' : 'view';
       return user_access('unpublish current revision', $account) ? $node_op : FALSE;
 
     case 'delete revisions':
@@ -1061,9 +1062,10 @@ function _revisioning_view_edit_access_callback($op, $node) {
  *   REVISIONING_LOAD_LATEST or REVISIONING_LOAD_CURRENT
  */
 function _revisioning_load_op($node, $op, $check_access = TRUE) {
+  $config = config('revisioning.settings');
   if (!empty($node->revision_moderation)) {
-    $view_mode = (int) variable_get('revisioning_view_callback', REVISIONING_LOAD_CURRENT);
-    $edit_mode = (int) variable_get('revisioning_edit_callback', REVISIONING_LOAD_CURRENT);
+    $view_mode = (int) $config->get('revisioning_view_callback', REVISIONING_LOAD_CURRENT);
+    $edit_mode = (int) $config->get('revisioning_edit_callback', REVISIONING_LOAD_CURRENT);
     $load_op = ($op == 'edit') ? $edit_mode : $view_mode;
     if ($load_op == REVISIONING_LOAD_LATEST) {
       // Site is configured to load latest revision, but we'll only do this if
@@ -1209,9 +1211,9 @@ function _revisioning_title_for_tab($node, $tab) {
 function _revisioning_set_custom_theme_if_necessary() {
   // Use the admin theme if the user specified this at Appearance >> Settings.
   // Note: first tick 'View the administration theme' at People >> Permissions.
-  if (variable_get('node_admin_theme', FALSE)) {
+  if (config_get('system.core', 'node_admin_theme', FALSE)) {
     global $theme, $custom_theme;
-    $custom_theme = variable_get('admin_theme', $theme);
+    $custom_theme = config_get('system.core', 'admin_theme', $theme);
   }
 }
 

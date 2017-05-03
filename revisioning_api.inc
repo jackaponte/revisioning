@@ -178,7 +178,7 @@ function revisioning_revision_is_current($node) {
  *   permission.
  */
 function revisioning_content_is_moderated($content_type, $node = NULL) {
-  $content_type_is_moderated = !empty($content_type) && in_array('revision_moderation', variable_get('node_options_' . $content_type, array()));
+  $content_type_is_moderated = !empty($content_type) && in_array('revision_moderation', config_get('revisioning.settings', 'node_options_' . $content_type, array()));
   if (!$content_type_is_moderated && isset($node->nid) && isset($node->current_revision_id)) {
     $latest_vid = revisioning_get_latest_revision_id($node->nid);
     return $latest_vid > $node->current_revision_id;
@@ -197,7 +197,7 @@ function revisioning_content_is_moderated($content_type, $node = NULL) {
  *   The node object
  */
 function revisioning_user_may_auto_publish($node) {
-  return variable_get('revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node);
+  return config_get('revisioning.settings', 'revisioning_auto_publish_' . $node->type, FALSE) && revisioning_user_node_access('publish revisions', $node);
 }
 
 /**
@@ -814,7 +814,7 @@ function revisioning_get_revisions($op, $is_published = -1, $creator_uid = -1, $
   }
   $sql_order = " ORDER BY " . (empty($order_by_override) ? _revisioning_extract_order_clause_from_URI() : $order_by_override);
   $include_taxonomy_terms = module_exists('taxonomy') &&
-    variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
+    config_get('revisioning.settings', 'revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
   if ($include_taxonomy_terms) {
     $conditions = array('type' => 'taxonomy_term_reference');
     $fields = field_read_fields($conditions);

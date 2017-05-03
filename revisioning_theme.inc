@@ -55,7 +55,7 @@ function revisioning_revisions_summary($form, &$form_state, $extra) {
   $form['nid'] = array('#type' => 'value', '#value' => $nid);
 
   $show_taxonomy_terms = module_exists('taxonomy') &&
-    variable_get('revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
+    config_get('revisioning.settings', 'revisioning_show_taxonomy_terms', TRUE) && (count(taxonomy_get_vocabularies()) > 0);
 
   $revisions = _revisioning_get_all_revisions_for_node($nid, $show_taxonomy_terms);
 

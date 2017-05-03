@@ -13,19 +13,20 @@ function revisioning_install() {
    * taxonomy_node_insert() and taxonomy_node_update() hooks must be executed
    * before revisioning_node_insert() and revisioning_node_update(). So increase
    * our weight to 1 or higher.
-   * A weight of 6 was chosen based on [#2142429].
+   * A weight of 6 was chosen based on [Drupal.org issue #2142429].
    */
   db_update('system')
     ->fields(array('weight' => 6))
     ->condition('name', 'revisioning')
     ->execute();
 
+  $config = config('revisioning.settings');
   // Panels override fix, see http://drupal.org/node/519924.
-  variable_set('page_manager_override_anyway', TRUE);
+  $config->set('page_manager_override_anyway', TRUE);
 
   // If requested, not yet published and unpublished nodes need to reveal their
   // taxonomy terms in Views and in feeds (subject to permissions).
-  if (module_exists('taxonomy') && variable_get('revisioning_in_views_show_unpublished_content_terms', TRUE)) {
+  if (module_exists('taxonomy') && $config->get('revisioning_in_views_show_unpublished_content_terms', TRUE)) {
     foreach (node_load_multiple(FALSE) as $node) {
       revisioning_update_taxonomy_index($node, TRUE);
     }
@@ -40,15 +41,16 @@ function revisioning_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'revisioning_%%'");
   // See above.
   variable_del('page_manager_override_anyway');
+  $config = config('revisioning.settings');
   foreach (node_type_get_types() as $type) {
     // Maybe revisioning_auto_publish_<type> and new_revisions_<type>
     // should be used in array, like 'revision_moderation' below?
     variable_del('new_revisions_' . $type->type);
     // Remove 'revision_moderation' from all node_options_<type> variables.
     $variable_name = 'node_options_' . $type->type;
-    if ($node_options = variable_get($variable_name, NULL)) {
+    if ($node_options = $config->get($variable_name, NULL)) {
       $node_options = array_diff($node_options, array('revision_moderation'));
-      variable_set($variable_name, $node_options);
+      $config->set($variable_name, $node_options);
     }
   }
   // Make sure that unpublished nodes do not reveal their taxonomy terms, once
