@@ -95,9 +95,14 @@ function revisioning_admin_configure() {
   );
   $form['#submit'][] = 'revisioning_admin_configure_form_submit';
 
-  $form['#theme'] = 'system_settings_form';
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+  '#type' => 'submit',
+  '#value' => t('Save configuration'),
+);
 
-  return $form;
+return $form;
+}
 }
 
 
