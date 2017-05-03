@@ -35,6 +35,16 @@ if (module_exists('rules')) {
   module_load_include('inc', 'revisioning', 'revisioning.rules');
 }
 
+/**
+ * Implements hook_config_info().
+ */
+function revisioning_config_info() {
+  $prefixes['revisioning.settings'] = array(
+    'label' => t('Revisioning settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
 
 /**
  * Implements hook_help().
