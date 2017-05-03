@@ -97,12 +97,11 @@ function revisioning_admin_configure() {
 
   $form['actions']['#type'] = 'actions';
   $form['actions']['submit'] = array(
-  '#type' => 'submit',
-  '#value' => t('Save configuration'),
-);
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
 
-return $form;
-}
+  return $form;
 }
 
 
