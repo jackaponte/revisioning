@@ -67,9 +67,9 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
 
       // Add javascript to show/hide the "Published" checkbox if the user
       // presses one of the first two radio buttons. Also updates summary tabs.
-      $js_file = drupal_get_path('module', 'revisioning') . '/js/revisioning-radios.js';
+      $js_file = backdrop_get_path('module', 'revisioning') . '/js/revisioning-radios.js';
       // After node.js.
-      drupal_add_js($js_file, array('weight' => 1));
+      backdrop_add_js($js_file, array('weight' => 1));
       if (variable_get('revisioning_no_moderation_by_default', FALSE)) {
         $form['revision_information']['revision_operation']['#default_value'] = REVISIONING_NEW_REVISION_NO_MODERATION;
       }
@@ -236,7 +236,7 @@ function revisioning_delete_archived_confirm_submit($form, &$form_state) {
 function revisioning_form_node_revision_revert_confirm_alter(&$form, &$form_state) {
   $node = $form['#node_revision'];
   if (_revisioning_get_number_of_pending_revisions($node->nid) > 0) {
-    drupal_set_message(t('There is a pending revision. Are you sure you want to revert to an archived revision?'), 'warning');
+    backdrop_set_message(t('There is a pending revision. Are you sure you want to revert to an archived revision?'), 'warning');
   }
   array_unshift($form['#submit'], 'revisioning_revert_confirm_pre_submit');
   $form['#submit'][] = 'revisioning_revert_confirm_post_submit';
@@ -273,7 +273,7 @@ function revisioning_revert_confirm_pre_submit($form, &$form_state) {
   $node = $form['#node_revision'];
   $return = module_invoke_all('revisionapi', 'pre revert', $node);
   if (in_array(FALSE, $return)) {
-    drupal_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
+    backdrop_goto('node/' . $node->nid . '/revisions/' . $node->vid . '/view');
   }
 }
 
@@ -334,7 +334,7 @@ function _revisioning_set_info_message() {
       }
     }
     if (count($moderated_types) > 0) {
-      drupal_set_message(t('You have permission to publish content revisions of type(s): %moderated_types.',
+      backdrop_set_message(t('You have permission to publish content revisions of type(s): %moderated_types.',
         array('%moderated_types' => implode(', ', $moderated_types))));
     }
   }
@@ -374,7 +374,7 @@ function _revisioning_delete_submit(&$form, &$form_state) {
  */
 function revisioning_block_info() {
   $block['pending']['info'] = t('Pending revisions');
-  $block['pending']['cache'] = DRUPAL_NO_CACHE;
+  $block['pending']['cache'] = BACKDROP_NO_CACHE;
   // Towards top of whatever region is chosen.
   $block['pending']['weight'] = -10;
   // Block is implemented by this module.
@@ -450,7 +450,7 @@ function _revisioning_block_pending_revisions_content($revisions) {
     $links[] = l($revision->title, "node/$revision->nid/revisions/$revision->vid/view");
   }
   // Also loads /css/revisioning-rtl.css
-  drupal_add_css(drupal_get_path('module', 'revisioning') . '/css/revisioning.css');
+  backdrop_add_css(backdrop_get_path('module', 'revisioning') . '/css/revisioning.css');
   $title_link = trim(variable_get('revisioning_content_summary_page', ''));
   $link_options = array();
   if (empty($title_link)) {

@@ -1,15 +1,15 @@
 (function ($) {
 
-  Drupal.behaviors.suppressPublishedForModeratedContent = {
+  Backdrop.behaviors.suppressPublishedForModeratedContent = {
     attach: function (context) {
 
       var publishedDiv = $('.form-item-status', context);
       var firstSummaryTab = $('.vertical-tabs span.summary:first', context)
       var lastSummaryTab  = $('.vertical-tabs span.summary:last', context);
-      var textNewRevision = Drupal.t('New revision');
-      var textNoRevision = Drupal.t('No revision');
-      var textPublished = Drupal.t('Published');
-      var textNotPublished = Drupal.t('Not published');
+      var textNewRevision = Backdrop.t('New revision');
+      var textNoRevision = Backdrop.t('No revision');
+      var textPublished = Backdrop.t('Published');
+      var textNotPublished = Backdrop.t('Not published');
       var checked = $('.form-item-revision-operation .form-radio:checked').val();
 
       if (checked == 0) {

@@ -339,7 +339,7 @@ function _revisioning_revertpublish_revision(&$node, $vid = NULL) {
   $node_revision = is_object($node) ? $node : node_load($node, $vid);
   $return = module_invoke_all('revisionapi', 'pre revert', $node_revision);
   if (in_array(FALSE, $return)) {
-    drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
+    backdrop_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
   }
   _revisioning_revert_revision($node_revision);
   module_invoke_all('revisionapi', 'post revert', $node_revision);
@@ -487,7 +487,7 @@ function _revisioning_publish_revision(&$node_revision, $clear_cache = TRUE) {
 
   $return = module_invoke_all('revisionapi', 'pre publish', $node_revision);
   if (in_array(FALSE, $return)) {
-    drupal_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
+    backdrop_goto('node/' . $node_revision->nid . '/revisions/' . $node_revision->vid . '/view');
   }
   // Update {node} and {node_revision} tables setting status and other flags.
   db_update('node')
@@ -933,7 +933,7 @@ function _revisioning_extract_order_clause_from_URI() {
   // from theme_table() is meant to look after it, but it's got a bug [#480382].
   // Note: this function is secure, as we're only allowing recognised values,
   // all unknown values, result in a descending sort by 'timestamp'.
-  switch ($order_by = drupal_strtolower($_REQUEST['order'])) {
+  switch ($order_by = backdrop_strtolower($_REQUEST['order'])) {
     case 'creator':
       $order_by = 'n.uid';
       break;
@@ -960,6 +960,6 @@ function _revisioning_extract_order_clause_from_URI() {
       $order_by = 'timestamp';
       break;
   }
-  $direction = (drupal_strtolower($_REQUEST['sort']) == 'asc') ? 'ASC' : 'DESC';
+  $direction = (backdrop_strtolower($_REQUEST['sort']) == 'asc') ? 'ASC' : 'DESC';
   return "$order_by $direction";
 }

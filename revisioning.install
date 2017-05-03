@@ -13,7 +13,7 @@ function revisioning_install() {
    * taxonomy_node_insert() and taxonomy_node_update() hooks must be executed
    * before revisioning_node_insert() and revisioning_node_update(). So increase
    * our weight to 1 or higher.
-   * A weight of 6 was chosen based on [Drupal.org issue #2142429].
+   * A weight of 6 was chosen based on Drupal.org issue #2142429.
    */
   db_update('system')
     ->fields(array('weight' => 6))
@@ -21,7 +21,7 @@ function revisioning_install() {
     ->execute();
 
   $config = config('revisioning.settings');
-  // Panels override fix, see http://drupal.org/node/519924.
+  // Panels override fix, see https://drupal.org/node/519924.
   $config->set('page_manager_override_anyway', TRUE);
 
   // If requested, not yet published and unpublished nodes need to reveal their

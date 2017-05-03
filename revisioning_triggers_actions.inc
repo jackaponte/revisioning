@@ -109,7 +109,7 @@ function revisioning_action_revision_trigger($revision, $hook) {
     $type = $info['type'];
     $objects[$type] = NULL;
     if (!isset($revision) && ($type == 'node' || $type == 'user')) {
-      drupal_set_message(t('Trigger %hook: no argument supplied to pass to @type action %aid', array(
+      backdrop_set_message(t('Trigger %hook: no argument supplied to pass to @type action %aid', array(
         '%hook' => $hook, '@type' => $type, '%aid' => $info['label'])), 'warning');
     }
     watchdog('revisioning', '%hook trigger is actioning %label',
@@ -217,6 +217,6 @@ function revisioning_publish_latest_revision_action(&$entity, $context = array()
     revisioning_set_status_message(t('Revision has been published.'));
   }
   else {
-    drupal_set_message(t('"%title" has no pending revision to be published.', array('%title' => $node->title)), 'warning');
+    backdrop_set_message(t('"%title" has no pending revision to be published.', array('%title' => $node->title)), 'warning');
   }
 }

@@ -52,7 +52,8 @@ function revisioning_config_info() {
 function revisioning_help($path, $arg) {
   switch ($path) {
     case 'admin/help#revisioning':
-      $s = t('For documentation and tutorials see the <a href="@revisioning">Revisioning project page</a>',
+    // TODO: update with location of any Backdrop-specific documentation. --jack@palantetech.coop
+      $s = t('For documentation and tutorials on the original Drupal module, see the <a href="@revisioning">Revisioning project page</a>',
         array('@revisioning' => url('http://drupal.org/project/revisioning')));
       break;
 
@@ -152,7 +153,7 @@ function revisioning_menu() {
   $items['admin/config/content/revisioning'] = array(
     'title' => 'Revisioning',
     'description' => 'Configure how content view and edit links behave. Customise revision summary listing.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('revisioning_admin_configure'),
     'access arguments' => array('administer site configuration'),
     'file' => 'revisioning.admin.inc',
@@ -161,7 +162,7 @@ function revisioning_menu() {
   // Plain link, not a tab, to allow users to unpublish a node.
   $items['node/%node/unpublish-current'] = array(
     // 'title' => t(Unpublish current revision'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('revisioning_unpublish_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('unpublish current revision', 1),
@@ -186,7 +187,7 @@ function revisioning_menu() {
 
   $items['node/%node/revisions/delete-archived'] = array(
     'title' => 'Delete archived revisions',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('revisioning_delete_archived_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('delete archived revisions', 1),
@@ -216,7 +217,7 @@ function revisioning_menu() {
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('edit revisions', 1),
     'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
+    'file path' => backdrop_get_path('module', 'node'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -7,
     // 'tab_parent' => 'node/%/revisions',
@@ -229,7 +230,7 @@ function revisioning_menu() {
   $items['node/%node/revisions/%vid/publish'] = array(
     'title' => 'Publish',
     'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('revisioning_publish_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('publish revisions', 1),
@@ -244,7 +245,7 @@ function revisioning_menu() {
   $items['node/%node/revisions/%vid/unpublish'] = array(
     'title' => 'Unpublish',
     'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('revisioning_unpublish_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('unpublish current revision', 1),
@@ -255,12 +256,12 @@ function revisioning_menu() {
   $items['node/%node/revisions/%vid/revert'] = array(
     'title' => 'Revert to this',
     'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_revision_revert_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('revert revisions', 1),
     'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
+    'file path' => backdrop_get_path('module', 'node'),
     'type' => MENU_LOCAL_TASK,
     'weight' => -2,
   );
@@ -268,12 +269,12 @@ function revisioning_menu() {
   $items['node/%node/revisions/%vid/delete'] = array(
     'title' => 'Delete',
     'load arguments' => array(3),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('node_revision_delete_confirm', 1),
     'access callback' => '_revisioning_access_node_revision',
     'access arguments' => array('delete revisions', 1),
     'file' => 'node.pages.inc',
-    'file path' => drupal_get_path('module', 'node'),
+    'file path' => backdrop_get_path('module', 'node'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
@@ -505,7 +506,7 @@ function revisioning_node_view($node, $view_mode, $langcode) {
  */
 function revisioning_set_status_message($message) {
   if (user_access('view revision status messages')) {
-    drupal_set_message(filter_xss($message), 'status');
+    backdrop_set_message(filter_xss($message), 'status');
   }
 }
 
@@ -518,10 +519,10 @@ function revisioning_node_prepare($node) {
   if (!empty($node->nid)) {
     $count = _revisioning_get_number_of_revisions_newer_than($node->vid, $node->nid);
     if ($count == 1) {
-      drupal_set_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
+      backdrop_set_message(t('Please note there is one revision more recent than the one you are about to edit.'), 'warning');
     }
     elseif ($count > 1) {
-      drupal_set_message(t('Please note there are @count revisions more recent than the one you are about to edit.',
+      backdrop_set_message(t('Please note there are @count revisions more recent than the one you are about to edit.',
         array('@count' => $count)), 'warning');
     }
   }
@@ -775,7 +776,7 @@ function revisioning_node_access_records_alter(&$grants, $node) {
 function revisioning_views_api() {
   return array(
     'api' => views_api_version(),
-    'path' => drupal_get_path('module', 'revisioning') . '/views',
+    'path' => backdrop_get_path('module', 'revisioning') . '/views',
   );
 }
 
@@ -841,7 +842,7 @@ function revisioning_user_node_access($revision_op, $node, $account = NULL) {
       return 'delete';
 
     default:
-      drupal_set_message(t("Unknown Revisioning operation '%revision_op'. Treating as 'view'.",
+      backdrop_set_message(t("Unknown Revisioning operation '%revision_op'. Treating as 'view'.",
         array('%revision_op' => $revision_op)), 'warning', FALSE);
   }
   return 'view';
@@ -1109,7 +1110,7 @@ function _revisioning_load_op($node, $op, $check_access = TRUE) {
  * the permitted operations above it.
  *
  * @return array
- *   render array as returned by drupal_get_form()
+ *   render array as returned by backdrop_get_form()
  */
 function revisioning_node_overview($node) {
   return _revisioning_theme_revisions_summary($node);
@@ -1154,7 +1155,7 @@ function _revisioning_view_revision($node) {
     // For Panels, see [#1567880]
     $router_item = menu_get_item('node/' . $node->nid);
     if (!empty($router_item['include_file'])) {
-      $path = DRUPAL_ROOT . '/'; // $_SERVER['DOCUMENT_ROOT'] . base_path();
+      $path = BACKDROP_ROOT . '/'; // $_SERVER['DOCUMENT_ROOT'] . base_path();
       require_once $path . $router_item['include_file'];
     }
     // Call whatever function is assigned to the main node path but pass the

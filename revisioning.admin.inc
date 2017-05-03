@@ -124,5 +124,5 @@ function revisioning_admin_configure_form_submit($form, &$form_state) {
     }
   }
 
-  drupal_set_message(t('The revisioning configuration options have been saved.'));
+  backdrop_set_message(t('The revisioning configuration options have been saved.'));
 }
