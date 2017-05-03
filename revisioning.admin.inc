@@ -9,7 +9,7 @@
  * Menu callback for admin configuration settings.
  */
 function revisioning_admin_configure() {
-
+  $config = config('revisioning.settings');
   $form['revisioning_view_and_edit_links'] = array(
     '#type' => 'fieldset',
     '#title' => t('Configure which revision is loaded when clicking on a view or edit link'),
