@@ -115,36 +115,53 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
  * and auto-publish policies.
  */
 function revisioning_form_node_type_form_alter(&$form, &$form_state) {
-  $form['revision']['#collapsed'] = FALSE;
-  //$form['workflow']['node_options']['#options']['revision_moderation'] = t('New revision in draft, pending moderation (requires "Create new revision")');
-  $form['revision']['revision']['revision_moderation'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('New revision in draft, pending moderation (requires "Create new revision by default")'),
-    '#parents' => array('revision_moderation'),
+  if (isset($form['#node_type'])) {
+    $content_type = $form['#node_type']->type;
+    $config = config('revisioning.settings');
+    $form['revision']['#collapsed'] = FALSE;
+    $form['revision']['revision'][$content_type. '_revision_moderation'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('New revision in draft, pending moderation (requires "Create new revision by default")'),
+      '#default_value' => (int) $config->get($content_type. '_revision_moderation', FALSE),
+      '#parents' => array($content_type. '_revision_moderation'),
+    );
+    $form['revision']['revisioning'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('New revision in draft'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
   );
 
-  $form['revision']['revisioning'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('New revision in draft'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
-  $content_type = $form['#node_type']->type;
-  $form['revision']['revisioning']['new_revisions'] = array(
+  $form['revision']['revisioning'][$content_type. '_new_revisions'] = array(
     '#title' => t('Create new revision:'),
     '#type' => 'radios',
     '#options' => array(
       REVISIONING_NEW_REVISION_WHEN_NOT_PENDING => t('Only when saving %type content that is not already in draft/pending moderation', array('%type' => $content_type)),
       REVISIONING_NEW_REVISION_EVERY_SAVE => t('Every time %type content is updated, even when saving content in draft/pending moderation', array('%type' => $content_type))),
-    '#default_value' => (int) variable_get('new_revisions_' . $content_type, REVISIONING_NEW_REVISION_WHEN_NOT_PENDING),
+    '#default_value' => (int) $config->get($content_type. '_new_revisions', REVISIONING_NEW_REVISION_WHEN_NOT_PENDING),
     '#description' => t('Use less disk space and avoid cluttering your revisions list. With the first option ticked, modifications are saved to the same copy (i.e. no additional revisions are created) until the content is published.'),
   );
-  $form['revision']['revisioning']['revisioning_auto_publish'] = array(
+  $form['revision']['revisioning'][$content_type. '_revisioning_auto_publish'] = array(
     '#title' => t('Auto-publish drafts of type %type (for moderators)', array('%type' => $content_type)),
     '#type' => 'checkbox',
-    '#default_value' => (int) variable_get('revisioning_auto_publish_' . $content_type, FALSE),
+    '#default_value' => (int) $config->get($content_type. '_revisioning_auto_publish', FALSE),
     '#description' => t('If this box is ticked and the user has one of the "Publish content revisions" permissions, then any draft of type %type is published immediately upon saving, without further review or the option to schedule a publication date.', array('%type' => $content_type)),
   );
+  $form["#submit"][] = 'revisioning_node_type_form_submit';
+  }
+}
+
+/**
+ * Callback for content type settings submit.
+ */
+function revisioning_node_type_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $content_type = $form['#node_type']->type;
+  $config = config('revisioning.settings');
+  $config->set(($content_type. '_revision_moderation'), $values[$content_type. '_revision_moderation']);
+  $config->set(($content_type. '_new_revisions'), $values[$content_type. '_new_revisions']);
+  $config->set(($content_type. '_revisioning_auto_publish'), $values[$content_type. '_revisioning_auto_publish']);
+  $config->save();
 }
 
 /**
