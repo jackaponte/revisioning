@@ -456,8 +456,8 @@ function revisioning_node_load($nodes, $types) {
  *
  * First of the dont_display hooks.
  */
-function revisioning_entity_prepare_view($entities, $entity_type, $langcode) {
-  if ($entity_type == 'node') {
+function revisioning_entity_prepare_view($entities, $type) {
+  if ($type == 'node') {
     foreach ($entities as $node) {
       if (!empty($node->dont_display)) {
         $node->title = FALSE;
