@@ -125,7 +125,6 @@ function revisioning_form_node_type_form_alter(&$form, &$form_state) {
       '#type' => 'checkbox',
       '#title' => t('New revision in draft, pending moderation (requires "Create new revision by default")'),
       '#default_value' => (int) $config->get($content_type. '_revision_moderation', FALSE),
-      '#parents' => array($content_type. '_revision_moderation'),
     );
     $form['revision']['revisioning'] = array(
       '#type' => 'fieldset',
