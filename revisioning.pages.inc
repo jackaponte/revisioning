@@ -13,6 +13,8 @@
  */
 function revisioning_form_alter(&$form, &$form_state, $form_id) {
 
+  $config = config('revisioning.settings');
+
   if (!empty($form['#node_edit_form'])) {
 
     $node = &$form['#node'];
@@ -34,7 +36,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
     // 'administer nodes' is required by default, but if configured
     // appropriately, then any user premitted to publish this node will get the
     // shortcut controls.
-    $add_radio_selector = variable_get('revisioning_publication_shortcuts', FALSE) ?
+    $add_radio_selector = $config->get('revisioning_publication_shortcuts', FALSE) ?
       revisioning_user_node_access('publish revisions', $node) :
       user_access('administer nodes');
     if ($add_radio_selector) {
@@ -70,7 +72,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       $js_file = backdrop_get_path('module', 'revisioning') . '/js/revisioning-radios.js';
       // After node.js.
       backdrop_add_js($js_file, array('weight' => 1));
-      if (variable_get('revisioning_no_moderation_by_default', FALSE)) {
+      if ($config->get('revisioning_no_moderation_by_default', FALSE)) {
         $form['revision_information']['revision_operation']['#default_value'] = REVISIONING_NEW_REVISION_NO_MODERATION;
       }
     }
@@ -403,10 +405,11 @@ function revisioning_block_info() {
  * Implements hook_block_configure().
  */
 function revisioning_block_configure($delta = 'pending') {
+  $config = config('revisioning.settings');
   $form['revisioning_block_num_pending'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum number of pending revisions displayed'),
-    '#default_value' => variable_get('revisioning_block_num_pending', 5),
+    '#default_value' => $config->get('revisioning_block_num_pending', 5),
     '#description' => t('Note: the title of this block mentions the total number of revisions pending, which may be greater than the number of revisions displayed.'),
   );
   $form['revisioning_block_order'] = array(
@@ -415,13 +418,13 @@ function revisioning_block_configure($delta = 'pending') {
     '#options' => array(
       REVISIONING_REVISIONS_BLOCK_OLDEST_AT_TOP => t('Oldest at top'),
       REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP => t('Newest at top')),
-    '#default_value' => variable_get('revisioning_block_order', REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP),
+    '#default_value' => $config->get('revisioning_block_order', REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP),
     '#description' => t('Note: order is based on revision timestamps.'),
   );
   $form['revisioning_content_summary_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Page to go to when the block title is clicked'),
-    '#default_value' => variable_get('revisioning_content_summary_page', ''),
+    '#default_value' => $config->get('revisioning_content_summary_page', ''),
     '#description' => t('When left blank this will default to either %view_content, if the Views module is enabled, or %admin_content, subject to permissions.<br/>For any of this to work the above <strong>Block title</strong> field must be left blank.', array(
       '%view_content' => 'content-summary',
       '%admin_content' => 'admin/content')),
@@ -433,16 +436,17 @@ function revisioning_block_configure($delta = 'pending') {
  * Implements hook_block_save().
  */
 function revisioning_block_save($delta = '', $edit = array()) {
-  variable_set('revisioning_block_num_pending', (int) $edit['revisioning_block_num_pending']);
-  variable_set('revisioning_block_order', (int) $edit['revisioning_block_order']);
-  variable_set('revisioning_content_summary_page', $edit['revisioning_content_summary_page']);
+  $config = config('revisioning.settings');
+  $config->set('revisioning_block_num_pending', (int) $edit['revisioning_block_num_pending']);
+  $config->set('revisioning_block_order', (int) $edit['revisioning_block_order']);
+  $config->set('revisioning_content_summary_page', $edit['revisioning_content_summary_page']);
 }
 
 /**
  * Implements hook_block_view().
  */
 function revisioning_block_view($delta = '') {
-  $order = variable_get('revisioning_block_order', REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP) == REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP ? 'DESC' : 'ASC';
+  $order = config_get('revisioning.settings', 'revisioning_block_order', REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP) == REVISIONING_REVISIONS_BLOCK_NEWEST_AT_TOP ? 'DESC' : 'ASC';
   $revisions = revisioning_get_revisions('view revision list', NO_FILTER, NO_FILTER, NO_FILTER, TRUE, TRUE, 100, 'timestamp ' . $order);
   if (!empty($revisions)) {
     return _revisioning_block_pending_revisions_content($revisions);
@@ -459,8 +463,9 @@ function revisioning_block_view($delta = '') {
  *   the block array
  */
 function _revisioning_block_pending_revisions_content($revisions) {
+  $config = config('revisioning.settings');
   $num_revisions = count($revisions);
-  $max_num_shown = variable_get('revisioning_block_num_pending', 5);
+  $max_num_shown = $config->get('revisioning_block_num_pending', 5);
   $links = array();
   foreach (array_slice($revisions, 0, $max_num_shown) as $revision) {
     // If they exist, should we show multiple pending revisions on same node?
@@ -468,7 +473,7 @@ function _revisioning_block_pending_revisions_content($revisions) {
   }
   // Also loads /css/revisioning-rtl.css
   backdrop_add_css(backdrop_get_path('module', 'revisioning') . '/css/revisioning.css');
-  $title_link = trim(variable_get('revisioning_content_summary_page', ''));
+  $title_link = trim($config->get('revisioning_content_summary_page', ''));
   $link_options = array();
   if (empty($title_link)) {
     if (module_exists('views')) {
