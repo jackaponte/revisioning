@@ -6,20 +6,15 @@
  */
 
 /**
- * Implements hook_form_alter().
- *
- * Note: for cases where the FORM_ID is known a priori we use
- * revisioning_form_FORMID_form_alter().
+ * Implements hook_form_BASE_FORM_ID_alter().
  */
-function revisioning_form_alter(&$form, &$form_state, $form_id) {
+function revisioning_form_node_form_alter(&$form, &$form_state, $form_id) {
 
   $config = config('revisioning.settings');
 
-  if (!empty($form['#node_edit_form'])) {
+  $node = &$form['#node'];
 
-    $node = &$form['#node'];
-
-    $is_moderated_content = isset($node->revision_moderation) ? $node->revision_moderation : revisioning_content_is_moderated($form['type']['#value'], $node);
+  $is_moderated_content = $node->revision_moderation ? '1' : '0';
 
     // Alter the Create/Edit content form, if subject to moderation.
     if ($is_moderated_content) {
@@ -30,7 +25,6 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
       $form['revision_information']['revision']['#default_value'] = TRUE;
       // For moderated content "Published" box will be treated as unticked,
       // See revisioning_node_presave().
-    }
 
     // Only add this radio selector if user has the appropriate permissions.
     // 'administer nodes' is required by default, but if configured
@@ -84,7 +78,7 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
         '#value' => $is_moderated_content,
       );
     }
-
+  }
     // In addition to node_form_submit() append our own handler to the list, so
     // that we can redirect to the pending, as opposed to current, revision.
     $form['actions']['submit']['#submit'][] = '_revisioning_form_submit';
@@ -106,7 +100,6 @@ function revisioning_form_alter(&$form, &$form_state, $form_id) {
         }
       }
     }
-  }
 }
 
 /**
