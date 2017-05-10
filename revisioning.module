@@ -680,7 +680,7 @@ function revisioning_node_update($node) {
       if ($old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->langcode)) {
         foreach ($old_files as $old_single_file) {
           if (!empty($old_single_file)) {
-            $old_file = (object) $old_single_file;
+            $old_file = file_load($old_single_file['fid']);
             file_usage_add($old_file, 'revisioning', 'revision', $old_node->vid);
           }
         }
@@ -691,7 +691,7 @@ function revisioning_node_update($node) {
     foreach ($file_fields as $file_field) {
       if ($files = field_get_items('node', $node, $file_field['field_name'], $node->langcode)) {
         foreach ($files as $single_file) {
-          $file = (object) $single_file;
+        $file = file_load($single_file['fid']);
           file_usage_add($file, 'revisioning', 'revision', $node->vid);
         }
       }
@@ -724,7 +724,7 @@ function revisioning_node_insert($node) {
     foreach ($file_fields as $file_field) {
       if ($files = field_get_items('node', $node, $file_field['field_name'], $node->langcode)) {
         foreach ($files as $single_file) {
-          $file = (object) $single_file;
+          $file = file_load($single_file['fid']);
           file_usage_add($file, 'revisioning', 'revision', $node->vid);
         }
       }
