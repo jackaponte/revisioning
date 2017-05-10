@@ -14,7 +14,7 @@ function revisioning_form_node_form_alter(&$form, &$form_state, $form_id) {
 
   $node = &$form['#node'];
 
-  $is_moderated_content = $node->revision_moderation ? '1' : '0';
+  $is_moderated_content = isset($node->revision_moderation) ? '1' : '0';
 
     // Alter the Create/Edit content form, if subject to moderation.
     if ($is_moderated_content) {
