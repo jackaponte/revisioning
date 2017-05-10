@@ -677,7 +677,7 @@ function revisioning_node_update($node) {
   $old_node = isset($node->original) && !empty($node->original) ? $node->original : NULL;
   if (isset($old_node) && !empty($file_fields)) {
     foreach ($file_fields as $file_field) {
-      if ($old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->language)) {
+      if ($old_files = field_get_items('node', $old_node, $file_field['field_name'], $old_node->langcode)) {
         foreach ($old_files as $old_single_file) {
           if (!empty($old_single_file)) {
             $old_file = (object) $old_single_file;
@@ -689,7 +689,7 @@ function revisioning_node_update($node) {
   }
   if (!empty($file_fields)) {
     foreach ($file_fields as $file_field) {
-      if ($files = field_get_items('node', $node, $file_field['field_name'], $node->language)) {
+      if ($files = field_get_items('node', $node, $file_field['field_name'], $node->langcode)) {
         foreach ($files as $single_file) {
           $file = (object) $single_file;
           file_usage_add($file, 'revisioning', 'revision', $node->vid);
@@ -722,7 +722,7 @@ function revisioning_node_insert($node) {
   }
   if (!empty($file_fields)) {
     foreach ($file_fields as $file_field) {
-      if ($files = field_get_items('node', $node, $file_field['field_name'], $node->language)) {
+      if ($files = field_get_items('node', $node, $file_field['field_name'], $node->langcode)) {
         foreach ($files as $single_file) {
           $file = (object) $single_file;
           file_usage_add($file, 'revisioning', 'revision', $node->vid);
