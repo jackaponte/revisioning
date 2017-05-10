@@ -38,8 +38,10 @@ function revisioning_form_node_form_alter(&$form, &$form_state, $form_id) {
       if (isset($form['menu'])) {
         $form['menu']['#collapsed'] = TRUE;
       }
+      // Make sure that revision information options are available.
+      $form['revision_information']['#access'] = TRUE;
       $form['revision_information']['#collapsed'] = FALSE;
-      $form['revision_information']['#weight'] = -3;
+      $form['revision_information']['#weight'] = -5;
 
       $options = array();
       if (isset($node->nid)) {
