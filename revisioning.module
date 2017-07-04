@@ -47,6 +47,24 @@ function revisioning_config_info() {
 }
 
 /**
+ * Implements hook_autoload_info()
+ */
+function revisioning_autoload_info() {
+  return array(
+    'revisioning_handler_field_node_last_editor' => 'views/revisioning_handler_field_node_last_editor.inc',
+    'revisioning_handler_field_node_number_of_revisions', 'views/revisioning_handler_field_node_number_of_revisions.inc',
+    'revisioning_handler_field_node_revision_moderation' => 'views/revisioning_handler_field_node_revision_moderation.inc',
+    'revisioning_handler_field_node_state' => 'views/revisioning_handler_field_node_state.inc',
+    'revisioning_handler_filter_node_number_of_revisions' => 'views/revisioning_handler_filter_node_number_of_revisions.inc',
+    'revisioning_handler_filter_node_revision_moderation' => 'views/revisioning_handler_filter_node_revision_moderation.inc',
+    'revisioning_handler_filter_node_state' => 'views/revisioning_handler_filter_node_state.inc',
+    'revisioning_handler_filter_revision_state' => 'views/revisioning_handler_filter_revision_state.inc',
+    'revisioning_handler_filter_revision_latest' => 'views/revisioning_handler_filter_revision_latest.inc',
+    'revisioning_handler_filter_revision_latest_published' => 'views/revisioning_handler_filter_revision_latest_published.inc',
+  );
+}
+
+/**
  * Implements hook_help().
  */
 function revisioning_help($path, $arg) {
