@@ -1,4 +1,3 @@
-
 DESCRIPTION OF ORIGINAL DRUPAL MODULE
 =====================================
 This module channels unpublished content as well as edits to current content
@@ -41,4 +40,6 @@ Revisioning UX: Greg Anderson, USA
 MAINTAINERS
 ===========
 
-Ported to Backdrop CMS and maintained by Jack Aponte (https://github.com/jackaponte).
+Not currently maintained or under development. Feel free to fork and continue my work if you'd like!
+
+Initially ported to Backdrop CMS and maintained by Jack Aponte (https://github.com/jackaponte).
