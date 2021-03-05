@@ -1,3 +1,6 @@
+**Not currently maintained or under development. Feel free to fork and continue my work if you'd like!**
+
+
 DESCRIPTION OF ORIGINAL DRUPAL MODULE
 =====================================
 This module channels unpublished content as well as edits to current content
